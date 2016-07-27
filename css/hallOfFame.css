@@ -1,0 +1,120 @@
+
+/*
+ * plugins/generic/hallOfFame/css/hallOfFame.css
+ *
+ * Copyright (c) 2016 Language Science Press
+ * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+*/
+
+#hallOfFame img {
+	display:inline;
+	height: 25px;
+}
+
+#hallOfFame h2 {
+	background-repeat:no-repeat !important;
+}
+
+#hallOfFame h2 span.headerText {
+	padding-left: 50px;
+}
+
+#hallOfFame div.star {
+	display:inline;
+}
+
+#hallOfFame h2.goldTitle {
+	background-image: url(../img/goldMedal.png);
+}
+
+#hallOfFame h2.silverTitle {
+	background-image: url(../img/silverMedal.png);
+}
+
+#hallOfFame h2.bronzeTitle {
+	background-image: url(../img/bronzeMedal.png);
+}
+
+#hallOfFame .ui-accordion-header {
+	padding: 0 !important;
+	margin: 0 !important;
+	padding: 6px 0px 6px 0px !important;
+}
+
+#hallOfFame .ui-accordion-header div.user {
+	height: 22px;  /* same size as the image */
+	display:inline-block;
+}
+
+#hallOfFame .ui-accordion-header div.achievements {
+	display:inline-block;
+	width: 70px;
+	vertical-align:bottom;
+}
+
+#hallOfFame .ui-accordion-header div.userName {
+	padding: 0 !important;
+	margin:0 !important;
+}
+
+#hallOfFame .ui-accordion-header div.colorBarWrapper { 
+	display:inline-block;
+}
+
+#hallOfFame .ui-accordion-header div.colorBar { 
+	display:inline-block;
+	border: 1px solid black;
+}
+
+#hallOfFame .ui-accordion-header div.colorBarWrapper span { 
+	font-size:0.8em;
+	margin-left:6px;
+	color: black;
+}
+
+#hallOfFame #tab-medalCount div.rank {
+	width: 30px;
+	float:left;
+	padding-top: 7px;
+}
+
+#hallOfFame #tab-medalCount li {
+	height: 30px;
+}
+
+#hallOfFame div.medalCount {
+	display:inline-block;
+}
+
+
+
+#hallOfFame #tab-medalCount img {
+	vertical-align: bottom;
+}
+
+h2.tooltip > span.tooltip,
+div.tooltip > span.tooltip
+{ 
+opacity: 0; 
+visibility: hidden; 
+z-index: 10; 
+position: absolute; 
+border: 1px solid black;
+background: white; 
+
+}
+
+h2.tooltip:hover > span.tooltip,
+div.tooltip:hover > span.tooltip
+{ 
+opacity: 1; 
+visibility: visible; 
+overflow: visible; 
+margin-top: 40px; 
+display: inline; 
+margin-left: -200px !important;
+}
+
+
+
+
