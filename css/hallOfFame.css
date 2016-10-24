@@ -97,12 +97,12 @@
 
 #hallOfFame #tab-medalCount li {
         height: 30px;
+		list-style: none;
 }
 
 #hallOfFame div.medalCount {
         display:inline-block;
 }
-
 
 
 #hallOfFame #tab-medalCount img {

@@ -95,7 +95,7 @@
 
 	 			<div class='hallOfFameAccordion'>
 					{foreach from=$medalUserData.user item=user}			
-						<h3>
+						<h3><img class="langsci-accordion-arrow" src="/public/site/images/admin/arrow_right.png"></img>
 							<div class="headerContent">
 
 								{** user name and (optional) link to profile  **}
