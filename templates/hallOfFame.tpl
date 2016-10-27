@@ -13,7 +13,7 @@
 	// Initialize JS handler for catalog header.
 
 	$(function() {ldelim}
-		$(".hallOfFameAccordion").accordion({ldelim} collapsible: true, autoHeight: false, active: true {rdelim});
+		$(".hallOfFameAccordion").accordion({ldelim} collapsible: true, animate: false, autoHeight: false, active: true {rdelim});
 	{rdelim});
 
    //capture the click on the a tag
@@ -143,7 +143,7 @@
 			 			<div class="accordionContent">
 							<ol>					
 								{foreach from=$user.submissions item=submission}
-									<li>
+									<li class="bibList">
 										{$submission.name}
 										<a class="linkToBookPage" href="{$submission.path}">&rarr;</a>
 									</li>

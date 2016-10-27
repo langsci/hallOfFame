@@ -21,6 +21,9 @@
         background-color: #dddddd;
 }
 
+#hallOfFame  .bibList {
+        padding-bottom: 8px;
+}
 
 #hallOfFame img {
         display:inline;
@@ -37,6 +40,10 @@
 
 #hallOfFame div.star {
         display:inline;
+}
+
+#hallOfFame div.accordionContent {
+	   height: auto !important;
 }
 
 #hallOfFame h2.goldTitle {
@@ -109,7 +116,6 @@
         vertical-align: bottom;
 }
 
-
 h2.tooltip > span.tooltip,
 div.tooltip > span.tooltip
 { 
@@ -134,3 +140,5 @@ margin-top: 40px;
 display: inline; 
 margin-left: -200px !important;
 }
+
+
