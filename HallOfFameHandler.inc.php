@@ -267,6 +267,7 @@ class HallOfFameHandler extends Handler {
 		}
 
 		$templateMgr = TemplateManager::getManager($request);
+		$this->setupTemplate($request); // important for getting the correct menu
 		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
 		$templateMgr->assign('userGroups',$userGroups);
 		$templateMgr->assign('medalCount',$medalCount);
