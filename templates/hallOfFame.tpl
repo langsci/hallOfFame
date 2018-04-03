@@ -100,7 +100,7 @@
 
 								{** user name and (optional) link to profile  **}
 								<div class="user" style="width:{math equation="x*y+z" x=$maxNameLength y=12 z=70}px">
-									<a class="userName">{$user.fullName}</a>
+									<a class="userName">{$user.fullName|strip_unsafe_html}</a>
 									{if $user.linkToProfile}<a class="linkToProfile" href="{$user.linkToProfile}">(view profile)</a>{/if}
 								</div>
 
@@ -109,13 +109,13 @@
 									{if $user.maxSeriesUser}
 										<div class="star tooltip">
 											<img src='{$baseUrl}/{$imageDirectory}/series.png'>
-											<span class="tooltip">Most versatile: {$user.fullName} has worked for {$userGroup.maxSeries} different series as {$userGroup.userGroupName|lower}.</span>
+											<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$userGroup.maxSeries} different series as {$userGroup.userGroupName|lower}.</span>
 										</div>							
 									{/if}
 									{if $user.recentMaxAchievementUser}
 										<div class="star tooltip">
 											<img src='{$baseUrl}/{$imageDirectory}/recent.png'>
-											<span class="tooltip">Most active current {$userGroup.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName} has worked on {$userGroup.maxRecentAchievements} book{if $userGroup.maxRecentAchievements>1}s{/if} as {$userGroup.userGroupName|lower}.</span>
+											<span class="tooltip">Most active current {$userGroup.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$userGroup.maxRecentAchievements} book{if $userGroup.maxRecentAchievements>1}s{/if} as {$userGroup.userGroupName|lower}.</span>
 										</div>
 									{/if}
 									{if !$user.maxSeriesUser && !$user.recentMaxAchievementUser}
@@ -136,7 +136,7 @@
 											{$user.numberOfSubmissions}/{$user.rankPercentile}
 										</span>
 									{/if}
-									<span class="tooltip">{$user.fullName} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$userGroup.userGroupName|lower}s.</span>
+									<span class="tooltip">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$userGroup.userGroupName|lower}s.</span>
 								</div>
 							</div>
 						</h3>
