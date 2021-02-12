@@ -17,7 +17,7 @@ import('lib.pkp.classes.form.Form');
 
 class HallOfFameSettingsForm extends Form {
 
-	/** @var AddThisBlockPlugin The plugin being edited */
+	/** @var The plugin being edited */
 	var $_plugin;
 
 	/** @var int Associated context ID */
@@ -25,17 +25,15 @@ class HallOfFameSettingsForm extends Form {
 
 	/**
 	 * Constructor.
-	 * @param $plugin AddThisBlockPlugin
+	 * @param $plugin 
 	 * @param $press Press
 	 */
-	function HallOfFameSettingsForm($plugin, $contextId) {
-
+	function __construct($plugin) {
+		$this->plugin = $plugin;
 		$this->_contextId = $contextId;
-		$this->_plugin = $plugin;
-
-		parent::Form($plugin->getTemplatePath() . 'settingsForm.tpl');
+		$this->_plugin = $plugin;		
 		$this->addCheck(new FormValidatorPost($this));
-
+		parent::__construct($plugin->getTemplateResource('settingsForm.tpl'));	 
 	}
 
 	//

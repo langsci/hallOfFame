@@ -41,9 +41,9 @@ class HallOfFamePlugin extends GenericPlugin {
 		if (parent::register($category, $path)) {
 			if ($this->getEnabled()) {
 				// Register the hall of fame DAO.
-				import('plugins.generic.hallOfFame.HallOfFameDAO');
-				$hallOfFameDao = new HallOfFameDAO();
-				DAORegistry::registerDAO('HallOfFameDAO', $hallOfFameDao);
+			//	import('plugins.generic.hallOfFame.HallOfFameDAO');
+			//	$hallOfFameDao = new HallOfFameDAO();
+			//	DAORegistry::registerDAO('HallOfFameDAO', $hallOfFameDao);
 				HookRegistry::register('LoadHandler', array($this, 'handleLoadRequest'));
 			}
 			return true;
@@ -76,17 +76,40 @@ class HallOfFamePlugin extends GenericPlugin {
 		return false;
 	}
 	
-	// PKPPlugin::getManagementVerbs()
-	function getManagementVerbs() {
-		$verbs = parent::getManagementVerbs();
-		if ($this->getEnabled()) {
-			$verbs[] = array('settings', __('plugins.generic.hallOfFame.settings'));
+	/**
+	 * @copydoc Plugin::manage()
+	 */
+	function manage($args, $request) {
+		$this->import('HallOfFameSettingsForm');
+		switch($request->getUserVar('verb')) {
+			case 'settings':
+				$settingsForm = new HallOfFameSettingsForm($this);
+				$settingsForm->initData();
+				return new JSONMessage(true, $settingsForm->fetch($request));
+			case 'save':
+				$settingsForm = new HallOfFameSettingsForm($this);
+				$settingsForm->readInputData();
+				if ($settingsForm->validate()) {
+					$settingsForm->execute();
+					$notificationManager = new NotificationManager();
+					$notificationManager->createTrivialNotification(
+						$request->getUser()->getId(),
+						NOTIFICATION_TYPE_SUCCESS,
+						array('contents' => __('plugins.generic.hallOfFame.settings.saved'))
+					);
+					return new JSONMessage(true);
+				}
+				return new JSONMessage(true, $settingsForm->fetch($request));
 		}
-		return $verbs;
+		return parent::manage($args, $request);
 	}
 
+
+	//
+	// Implement template methods from GenericPlugin.
+	//
 	/**
-	 * @see Plugin::getActions()
+	 * @copydoc Plugin::getActions()
 	 */
 	function getActions($request, $verb) {
 		$router = $request->getRouter();
@@ -105,29 +128,6 @@ class HallOfFamePlugin extends GenericPlugin {
 			):array(),
 			parent::getActions($request, $verb)
 		);
-	}
-
- 	/**
-	 * @see Plugin::manage()
-	 */
-	function manage($args, $request) {
-		switch ($request->getUserVar('verb')) {
-			case 'settings':
-				$context = $request->getContext();
-				$this->import('HallOfFameSettingsForm');
-				$form = new HallOfFameSettingsForm($this, $context->getId());
-				if ($request->getUserVar('save')) {
-					$form->readInputData();
-					if ($form->validate()) {
-						$form->execute();
-						return new JSONMessage(true);
-					}
-				} else {
-					$form->initData();
-				}
-				return new JSONMessage(true, $form->fetch($request));
-		}
-		return parent::manage($args, $request);
 	}
 
 	private function checkUrl($pageUrl,$opUrl) {
