@@ -1,202 +1,272 @@
 {**
- * plugins/generic/hallOfFame/hallOfFame.tpl
+ * templates/user/profile.tpl
  *
- * Copyright (c) 2016 Language Science Press
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
- * main template for the hall of fame plugin
+ * User profile tabset.
  *}
-
+ 
 {include file="frontend/components/header.tpl" pageTitleTranslated="$title"}
 
-<script type="text/javascript">
-	// Initialize JS handler for catalog header.
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		document.getElementById("proofreader").style.display = "block";	
+		document.getElementById("typesetter").style.display = "none";
+		document.getElementById("medalcount").style.display = "none";
+		document.getElementById("tab-proofreader").style.backgroundColor = "#eee";		
+	});
 
-	$(function() {ldelim}
-		$(".hallOfFameAccordion").accordion({ldelim} collapsible: true, animate: false, autoHeight: false, active: true {rdelim});
-	{rdelim});
+	function openPage(pageName) {
+	  var i, tabcontent;
+	  tabcontent = document.getElementsByClassName("tabcontent");
+	  for (i = 0; i < tabcontent.length; i++) {
+		tabcontent[i].style.display = "none";
+	  }
+	  document.getElementById(pageName).style.display = "block";	  
+	  
+	  tablink = document.getElementsByClassName("tablink");
+	  for (i = 0; i < tablink.length; i++) {
+		tablink[i].style.backgroundColor = "#fff";
+	  }
+	  var str1 = "tab-"; 
+	  document.getElementById(str1.concat(pageName)).style.backgroundColor = "#eee";  
+	}
 
-   //capture the click on the a tag
-	$(function() {ldelim}
-		$(".hallOfFameAccordion h3 a.linkToProfile").click(function() {ldelim}
-      		window.location = $(this).attr('href');
-      		return false;
-		{rdelim});
-	{rdelim});
 </script>
 
-<link rel="stylesheet" href="{$baseUrl}/plugins/generic/hallOfFame/css/jquery-ui.structure.css" type="text/css" />
 <link rel="stylesheet" href="{$baseUrl}/plugins/generic/hallOfFame/css/hallOfFame.css" type="text/css" />
 
-<script>
-  $(function() {ldelim}
-    $("#tabs").tabs();
-  {rdelim});
-</script>
+<style>
 
-<script type="text/javascript">
+	button {
+		text-align:left;
+	}
+	
+	.tablink {
+	  float: left;
+	  border: none;
+	  outline: none;
+	  cursor: pointer;
+	  padding: 14px 16px;
+	  width: 25%;
+	  border-top: none;
+	  border-left:none;
+	  border-right:none;
+	  border-bottom: 2px solid #eee;
+	  border-top:  2px solid #eee;
+	  background-color: white;
+	}
 
-	{literal}
-		function showStarInfo(userGroupId,medal,maxSeries){ 
-			if (medal.localeCompare('series')) {
-				alert("userGroup: " + userGroupId + ", medal: " + medal );
-			} else {
-				alert("userGroup: " + userGroupId + ", medal: " + medal+ ", max number of series: " +maxSeries);
-			}
+	.tabcontent {
+	  padding: 20px 20px;
+	  height: 100%;
+	}
+	
+	.accordion {
+	  cursor: pointer;
+	  padding: 18px;
+	  width: 100%;
+	  border: none;
+	  text-align: left;
+	  outline: none;
+	  transition: 0.8s;
+	  background-color: white;
+	}
 
-		} 
-	{/literal}
+	.active, .accordion:hover {
 
-</script>
+	}
+
+	.panel {
+	  padding: 0 18px;
+	  display: none;
+	  overflow: hidden;
+	}
+	
+.triangle {
+    border-color: white white white #005680;;
+    border-style: solid;
+    border-width: 5px 10px 5px 10px;
+    height: 0px;
+    width: 0px;
+	float:left
+}
+
+.active .triangle {
+    border-color: #005680 white white white;
+    border-width: 10px 5px 10px 5px;
+}
+
+.contributor-name {
+    margin-top: -3px;
+	float:left;
+}
+
+.active .contributor-name {
+    padding-left: 10px;
+	float:left;
+}
+.colorBar {
+	float:left;
+	margin-top: -3px;
+	background-color: #ffe56b;
+	padding-left: 10px;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 320px;
+  background-color:#eee;
+  border-bottom: 1px solid #999; 
+  border-radius: 3px;
+  padding: 3px;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+.smallBarCaption {
+	margin-top:-3px;
+}
+
+.star {
+	float:left;
+	margin-top:-8px;
+	padding-right: 5px;
+}
+	
+</style>
 
 <div id="hallOfFame">
 
-<h2 class="title">{translate key="plugins.generic.hallOfFame.title"}</h2>
+	<h2 class="title">{translate key="plugins.generic.hallOfFame.title"}</h2>
 
-<p class="intro">{translate key="plugins.generic.hallOfFame.intro"}</p>
+	<p class="intro">{translate key="plugins.generic.hallOfFame.intro"}</p>
+	
 
-<div id="tabs">
-    <ul class="tab">
-		{foreach from=$userGroups item=userGroup}
-        	<li class="tab"><a href="#tab-{$userGroup.userGroupId}">{$userGroup.userGroupName}</a></li>
-		{/foreach}
-		{if $settingMedalCount>0 or $settingMedalCount==''}
-			<li class="tab"><a href="#tab-medalCount">Medal count</a></li>
-		{/if}
-    </ul>
 
-	{foreach from=$userGroups item=userGroup}
 
-		<div id="tab-{$userGroup.userGroupId}">
+	<button class="tablink" id="tab-proofreader" onclick="openPage('proofreader')">Proofreader</button>
+	<button class="tablink" id="tab-typesetter" onclick="openPage('typesetter')">Typesetter</button>
+	<button class="tablink" id="tab-medalcount" onclick="openPage('medalcount')">Medal count</button>
 
-			{counter start=0 print=false}
-
-			{foreach from=$userGroup.userData item=medalUserData}
-
-				{counter print=false assign=medal}
-				{if $medal==1 and $medalUserData.user|@count>0}
-					<h2 class="goldTitle tooltip">
-						<span class="headerText">Gold {$userGroup.userGroupName|lower}s</span>
-						<span class="tooltip">Gold {$userGroup.userGroupName|lower}s have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankGold} percent of all {$userGroup.userGroupName|lower}s.</span>
-					</h2>
-				{/if}
-				{if $medal==2 and $medalUserData.user|@count>0}
-					<h2 class="silverTitle tooltip">
-						<span class="headerText">Silver {$userGroup.userGroupName|lower}s</span>
-						<span class="tooltip">Silver {$userGroup.userGroupName|lower}s have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankSilver} percent of all {$userGroup.userGroupName|lower}s.</span>
-					</h2>
-				{/if}
-				{if $medal==3 and $medalUserData.user|@count>0}
-					<h2 class="bronzeTitle tooltip">
-						<span class="headerText">Bronze {$userGroup.userGroupName|lower}s</span>
-						<span class="tooltip">Bronze {$userGroup.userGroupName|lower}s have worked on at least one book.
-					</h2>
-				{/if}
-
-	 			<div class='hallOfFameAccordion'>
-					{foreach from=$medalUserData.user item=user}			
-						<h3><img class="langsci-accordion-arrow" src="/public/site/images/admin/arrow_right.png"></img>
-							<div class="headerContent">
-
-								{** user name and (optional) link to profile  **}
-								<div class="user" style="width:{math equation="x*y+z" x=$maxNameLength y=12 z=70}px">
-									<a class="userName">{$user.fullName|strip_unsafe_html}</a>
-									{if $user.linkToProfile}<a class="linkToProfile" href="{$user.linkToProfile}">(view profile)</a>{/if}
-								</div>
-
-								{** stars **}
-								<div class="achievements">
-									{if $user.maxSeriesUser}
+	<div id="proofreader" class="tabcontent">
+	
+		{foreach from=$proofreader.userData item=medalUserData}
+		
+			{counter print=false assign=medal}	
+			{if $medal==1 and $medalUserData.user|@count>0}
+				<h2 class="goldTitle tooltip">
+					<span class="headerText">Gold Proofreaders</span>
+				</h2>
+			{/if}
+			{if $medal==2 and $medalUserData.user|@count>0}
+				<h2 class="silverTitle tooltip">
+					<span class="headerText">Silver Proofreaders</span>
+				</h2>
+			{/if}
+			{if $medal==3 and $medalUserData.user|@count>0}
+				<h2 class="bronzeTitle tooltip">
+					<span class="headerText">Bronze Proofreaders</span>
+				</h2>
+			{/if}			
+			
+			{foreach from=$medalUserData item=users}
+			{foreach from=$users item=user}
+				{assign var="barWidth" value=$user.numberOfSubmissions*300/$proofreader.maxAchievements}
+				<button class="accordion">
+					<div class="triangle"></div>					
+					<div class="contributor-name" style="width:{math equation="x*y+z" x=$maxNameLength y=12 z=40}px" >{$user.fullName}</div>
+					
+					
+									
 										<div class="star tooltip">
+										{if $user.maxSeriesUser}
 											<img src='{$baseUrl}/{$imageDirectory}/series.png'>
 											<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$userGroup.maxSeries} different series as {$userGroup.userGroupName|lower}.</span>
+										{else}
+										<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+										{/if}
 										</div>							
-									{/if}
-									{if $user.recentMaxAchievementUser}
+									
+									
 										<div class="star tooltip">
+										{if $user.recentMaxAchievementUser}
 											<img src='{$baseUrl}/{$imageDirectory}/recent.png'>
 											<span class="tooltip">Most active current {$userGroup.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$userGroup.maxRecentAchievements} book{if $userGroup.maxRecentAchievements>1}s{/if} as {$userGroup.userGroupName|lower}.</span>
-										</div>
-									{/if}
-									{if !$user.maxSeriesUser && !$user.recentMaxAchievementUser}
+										{else}
 										<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
-									{/if}
-								</div>
+										{/if}
+										</div>
+									
+							
 
-								{** achievement bar **}
-								{assign var="barWidth" value=$user.numberOfSubmissions*300/$userGroup.maxAchievements}
-								<div class="colorBarWrapper tooltip" title="">
-									<div class="colorBar" style="width:{$barWidth}px;">
-										<span>
-											{if $barWidth>=33}{$user.numberOfSubmissions}/{$user.rankPercentile}{else}{/if}
-										</span>									
-									</div>
-									{if $barWidth<33}
-										<span>
-											{$user.numberOfSubmissions}/{$user.rankPercentile}
-										</span>
-									{/if}
-									<span class="tooltip">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$userGroup.userGroupName|lower}s.</span>
-								</div>
-							</div>
-						</h3>
-			 			<div class="accordionContent">
-							<ol>					
-								{foreach from=$user.submissions item=submission}
-									<li class="bibList">
-										{$submission.name}
-										<a class="linkToBookPage" href="{$submission.path}">&rarr;</a>
-									</li>
-								{/foreach}
-							</ol>
-						</div>
-					{/foreach}
-				</div>
-			{/foreach}
-		</div>
-
-	{/foreach}
-
-	{if $settingMedalCount>0 or $settingMedalCount==''} 
-		<div id="tab-medalCount">
-
-			{if $settingMedalCount>0}
-				<h2>Top {$settingMedalCount}</h2>
-			{/if}
-			<ul>
-			{foreach from=$medalCount item=user}
-				<li>
-					<div class="rank">{$user.rank}.</div> 
-					<div class="medalCount" style="width:{math equation="x*y" x=$maxPrizes y=35}px;">
-						{foreach from=$user.type item=achievementType key=medal}
-							{foreach from=$achievementType key=k item=i}
-								<div class="tooltip" style="display:inline">
-									<img src='{$baseUrl}/{$imageDirectory}/{$medal}.png'>
-									<span class="tooltipsmall tooltip">{if $medal=="gold"}Gold {$userGroupNames.$k}{elseif $medal=="silver"}Silver {$userGroupNames.$k}{elseif $medal=="bronze"}Bronze {$userGroupNames.$k}{elseif $medal=="recent"}Most active {$userGroupNames.$k|lower} at present{elseif $medal=="series"}Most versatile {$userGroupNames.$k|lower}{/if}</span>
-								</div>									
-							{/foreach}											
-						{/foreach}
+									
+					<div class="colorBar tooltip" style="width:{$barWidth}px;">{if $barWidth>=33}{$user.numberOfSubmissions}/{$user.rankPercentile}{else}&nbsp{/if}
+						<span class="tooltiptext">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$proofreader.userGroupName|lower}s.</span>
 					</div>
-					{if $user.linkToProfile}
-						<a class="medalCountName" href="{$user.linkToProfile}">{$user.name}</a> 
-					{else}
-						{$user.name}
+					{if $barWidth<33}
+						<div class="smallBarCaption">
+							&nbsp&nbsp{$user.numberOfSubmissions}/{$user.rankPercentile}
+						</div>
 					{/if}
-				</li>
+				</button>				
+								
+				<div class="panel">
+					<ol>					
+						{foreach from=$user.submissions item=submission}
+							<li class="bibList">
+								{$submission.name}
+								<a class="linkToBookPage" href="{$submission.path}">&rarr;</a>
+							</li>
+						{/foreach}
+					</ol>
+				</div>			
 			{/foreach}
-			</ul>
-		</div>
-	{/if}
+			{/foreach}
+		{/foreach}
+		
+	</div>
 
+	<div id="typesetter" class="tabcontent">
+	  <h3>Typesetter</h3>
+	  <p>Typesetter</p>
+	</div>
+
+	<div id="medalcount" class="tabcontent">
+	  <h3>Medal count</h3>
+	  <p>Medal count</p>
+	</div>
 
 </div>
-
-</div>
-
-
-
-{strip}
+<script>
+	var acc = document.getElementsByClassName("accordion");
+	var i;
+	for (i = 0; i < acc.length; i++) {
+	  acc[i].addEventListener("click", function() {
+		this.classList.toggle("active");
+		var panel = this.nextElementSibling;
+		if (panel.style.display === "block") {
+		  panel.style.display = "none";
+		} else {
+		  panel.style.display = "block";
+		}
+	  });	  
+	}
+</script>
 
 {include file="frontend/components/footer.tpl"}
 
-{/strip}

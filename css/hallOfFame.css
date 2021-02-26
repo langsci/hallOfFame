@@ -5,6 +5,35 @@
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
 */
 
+
+
+#hallOfFame div.colorBarWrapper { 
+        /*display:inline-block;*/
+}
+
+#hallOfFame div.colorBar { 
+        /*display:inline-block;*/
+        background-color: #ffe56b;
+}
+
+#hallOfFame div.colorBarWrapper span { 
+        font-weight: normal;
+        font-size:0.8em;
+        margin-left:6px;
+        color: black;
+}
+
+
+
+
+
+
+
+
+
+
+/************************/
+
 #hallOfFame .linkToProfile {
         font-weight: normal;
 }
@@ -80,21 +109,7 @@
         margin:0 !important;
 }
 
-#hallOfFame .ui-accordion-header div.colorBarWrapper { 
-        display:inline-block;
-}
 
-#hallOfFame .ui-accordion-header div.colorBar { 
-        display:inline-block;
-        background-color: #ffe56b;
-}
-
-#hallOfFame .ui-accordion-header div.colorBarWrapper span { 
-        font-weight: normal;
-        font-size:0.8em;
-        margin-left:6px;
-        color: black;
-}
 
 #hallOfFame #tab-medalCount div.rank {
         width: 30px;

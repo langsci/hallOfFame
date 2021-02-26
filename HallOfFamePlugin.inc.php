@@ -50,8 +50,21 @@ class HallOfFamePlugin extends GenericPlugin {
 		}
 		return false;
 	}
+	
+	function handleLoadRequest($hookName, $args) {
+		$page = $args[0];	
+		if ($page == 'halloffame') {
+			$args[1] =$page;
+			define('HALLOFFAME_PLUGIN_NAME', $this->getName());
+			define('HANDLER_CLASS', 'HallOfFameHandler');
+			$this->import('HallOfFameHandler');		
+			return true;
+		}		
+		return false;
+	}	
 
 	// handle load request
+	/*
 	function handleLoadRequest($hookName, $args) {
 
 		$request = $this->getRequest();
@@ -74,62 +87,8 @@ class HallOfFamePlugin extends GenericPlugin {
 			return true;
 		}
 		return false;
-	}
+	}*/
 	
-	/**
-	 * @copydoc Plugin::manage()
-	 */
-	function manage($args, $request) {
-		$this->import('HallOfFameSettingsForm');
-		switch($request->getUserVar('verb')) {
-			case 'settings':
-				$settingsForm = new HallOfFameSettingsForm($this);
-				$settingsForm->initData();
-				return new JSONMessage(true, $settingsForm->fetch($request));
-			case 'save':
-				$settingsForm = new HallOfFameSettingsForm($this);
-				$settingsForm->readInputData();
-				if ($settingsForm->validate()) {
-					$settingsForm->execute();
-					$notificationManager = new NotificationManager();
-					$notificationManager->createTrivialNotification(
-						$request->getUser()->getId(),
-						NOTIFICATION_TYPE_SUCCESS,
-						array('contents' => __('plugins.generic.hallOfFame.settings.saved'))
-					);
-					return new JSONMessage(true);
-				}
-				return new JSONMessage(true, $settingsForm->fetch($request));
-		}
-		return parent::manage($args, $request);
-	}
-
-
-	//
-	// Implement template methods from GenericPlugin.
-	//
-	/**
-	 * @copydoc Plugin::getActions()
-	 */
-	function getActions($request, $verb) {
-		$router = $request->getRouter();
-		import('lib.pkp.classes.linkAction.request.AjaxModal');
-		return array_merge(
-			$this->getEnabled()?array(
-				new LinkAction(
-					'settings',
-					new AjaxModal(
-						$router->url($request, null, null, 'manage', null, array('verb' => 'settings', 'plugin' => $this->getName(), 'category' => 'generic')),
-						$this->getDisplayName()
-					),
-					__('manager.plugins.settings'),
-					null
-				),
-			):array(),
-			parent::getActions($request, $verb)
-		);
-	}
-
 	private function checkUrl($pageUrl,$opUrl) {
 
 		$request = $this->getRequest();
@@ -160,12 +119,103 @@ class HallOfFamePlugin extends GenericPlugin {
 			$goToHallOfFame = true;
 		}
 		return $goToHallOfFame;
+	}	
+	
+	
+	//
+	// Implement template methods from GenericPlugin.
+	//
+	/**
+	 * @copydoc Plugin::getActions()
+	 */
+	function getActions($request, $verb) {
+		$router = $request->getRouter();
+		import('lib.pkp.classes.linkAction.request.AjaxModal');
+		return array_merge(
+			$this->getEnabled()?array(
+				new LinkAction(
+					'settings',
+					new AjaxModal(
+						$router->url($request, null, null, 'manage', null, array('verb' => 'settings', 'plugin' => $this->getName(), 'category' => 'generic')),
+						$this->getDisplayName()
+					),
+					__('manager.plugins.settings'),
+					null
+				),
+			):array(),
+			parent::getActions($request, $verb)
+		);
 	}
 
-	// PKPPlugin::getTemplatePath
-	function getTemplatePath() {
-		return parent::getTemplatePath() . 'templates/';
+ 	/**
+	 * @see Plugin::manage()
+	 */
+	function manage($args, $request) {
+		switch ($request->getUserVar('verb')) {
+			case 'settings':
+				$context = $request->getContext();
+
+				AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON,  LOCALE_COMPONENT_PKP_MANAGER);
+				$templateMgr = TemplateManager::getManager($request);
+				$templateMgr->registerPlugin('function', 'plugin_url', array($this, 'smartyPluginUrl'));
+
+				$this->import('SettingsForm');
+				$form = new SettingsForm($this, $context->getId());
+
+				if ($request->getUserVar('save')) {
+					$form->readInputData();
+					if ($form->validate()) {
+						$form->execute();
+						return new JSONMessage(true);
+					}
+				} else {
+					$form->initData();
+				}
+				return new JSONMessage(true, $form->fetch($request));
+		}
+		return parent::manage($args, $request);
+	}			
+	
+	/**
+	 * @copydoc Plugin::manage()
+	 */
+/*	 
+	function manage($args, $request) {
+		$this->import('HallOfFameSettingsForm');
+		switch($request->getUserVar('verb')) {
+			case 'settings':
+				$settingsForm = new HallOfFameSettingsForm($this);
+				$settingsForm->initData();
+				return new JSONMessage(true, $settingsForm->fetch($request));
+			case 'save':
+				$settingsForm = new HallOfFameSettingsForm($this);
+				$settingsForm->readInputData();
+				if ($settingsForm->validate()) {
+					$settingsForm->execute();
+					$notificationManager = new NotificationManager();
+					$notificationManager->createTrivialNotification(
+						$request->getUser()->getId(),
+						NOTIFICATION_TYPE_SUCCESS,
+						array('contents' => __('plugins.generic.hallOfFame.settings.saved'))
+					);
+					return new JSONMessage(true);
+				}
+				return new JSONMessage(true, $settingsForm->fetch($request));
+		}
+		return parent::manage($args, $request);
 	}
+
+*/
+
+
+
+
+
+
+	// PKPPlugin::getTemplatePath
+//	function getTemplatePath() {
+//		return parent::getTemplatePath() . 'templates/';
+//	}
 }
 
 ?>

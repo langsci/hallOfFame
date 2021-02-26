@@ -1,24 +1,23 @@
 <?php
 
 /**
- * @file plugins/generic/addThis/AddThisSettingsForm.inc.php
+ * @file plugins/generic/hallOfFame/SettingsForm.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) Language Science Press
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
- * @class AddThisSettingsForm
- * @ingroup plugins_generic_AddThis
+ * @class SettingsForm
+ * @ingroup plugins_generic_HallOfFame
  *
  * @brief Form for adding/editing the settings for the AddThis plugin
  */
 
 import('lib.pkp.classes.form.Form');
 
-class HallOfFameSettingsForm extends Form {
+class SettingsForm extends Form {
 
 	/** @var The plugin being edited */
-	var $_plugin;
+	private $_plugin;
 
 	/** @var int Associated context ID */
 	private $_contextId;
@@ -28,12 +27,15 @@ class HallOfFameSettingsForm extends Form {
 	 * @param $plugin 
 	 * @param $press Press
 	 */
-	function __construct($plugin) {
-		$this->plugin = $plugin;
+	function __construct($plugin,$contextId) {
+
 		$this->_contextId = $contextId;
-		$this->_plugin = $plugin;		
-		$this->addCheck(new FormValidatorPost($this));
-		parent::__construct($plugin->getTemplateResource('settingsForm.tpl'));	 
+		$this->_plugin = $plugin;
+		parent::__construct($plugin->getTemplateResource('settingsForm.tpl'));
+		
+		//$this->addCheck(new FormValidatorPost($this));
+		//$this->addCheck(new FormValidatorCSRF($this));
+	 
 	}
 
 	//
@@ -60,20 +62,6 @@ class HallOfFameSettingsForm extends Form {
 	}
 
 	/**
-	 * Fetch the form.
-	 * @see Form::fetch()
-	 * @param $request PKPRequest
-	 */
-	function fetch($request) {
-
-		$templateMgr = TemplateManager::getManager($request);
-		$templateMgr->assign('pluginName', $this->_plugin->getName());
-		$templateMgr->assign('pluginBaseUrl', $request->getBaseUrl() . '/' . $this->_plugin->getPluginPath());
-
-		return parent::fetch($request);
-	}
-
-	/**
 	 * Assign form data to user-submitted data.
 	 * @see Form::readInputData()
 	 */
@@ -94,10 +82,36 @@ class HallOfFameSettingsForm extends Form {
 	}
 
 	/**
+	 * Fetch the form.
+	 * @see Form::fetch()
+	 * @param $request PKPRequest
+	 */
+	 /*
+	function fetch($request) {
+
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign('pluginName', $this->_plugin->getName());
+		$templateMgr->assign('pluginBaseUrl', $request->getBaseUrl() . '/' . $this->_plugin->getPluginPath());
+
+		return parent::fetch($request);
+	}*/
+	
+	/**
+	 * Fetch the form.
+	 * @see Form::fetch()
+	 * @param $request PKPRequest
+	 */
+	public function fetch($request, $template = null, $display = false) {
+		$templateMgr = TemplateManager::getManager($request);
+		$templateMgr->assign('pluginName', $this->_plugin->getName());
+		return parent::fetch($request, $template, $display);
+	}	
+
+	/**
 	 * Save the plugin's data.
 	 * @see Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 
 		$plugin = $this->_plugin;
 		$contextId = $this->_contextId;
@@ -113,7 +127,8 @@ class HallOfFameSettingsForm extends Form {
 		$plugin->updateSetting($contextId, 'langsci_hallOfFame_medalCount', trim($this->getData('langsci_hallOfFame_medalCount')));
 		$plugin->updateSetting($contextId, 'langsci_hallOfFame_includeCommentators', trim($this->getData('langsci_hallOfFame_includeCommentators')));
 		
-
+		parent::execute(...$functionArgs);
 	}
+
 }
 ?>
