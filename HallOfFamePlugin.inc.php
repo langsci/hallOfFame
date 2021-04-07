@@ -63,65 +63,6 @@ class HallOfFamePlugin extends GenericPlugin {
 		return false;
 	}	
 
-	// handle load request
-	/*
-	function handleLoadRequest($hookName, $args) {
-
-		$request = $this->getRequest();
-		$press   = $request->getPress();		
-
-		// get url path components to overwrite them 
-		$pageUrl =& $args[0];
-		$opUrl =& $args[1];
-
-		$goToHallOfFame = $this->checkUrl($pageUrl,$opUrl);
-
-		if ($goToHallOfFame) {
-
-			$pageUrl = '';
-			$opUrl = 'viewHallOfFame';
-
-			define('HANDLER_CLASS', 'HallOfFameHandler');
-			define('HALLOFFAME_PLUGIN_NAME', $this->getName());
-			$this->import('HallOfFameHandler');
-			return true;
-		}
-		return false;
-	}*/
-	
-	private function checkUrl($pageUrl,$opUrl) {
-
-		$request = $this->getRequest();
-		$context = $request->getContext();
-	
-		// get path components
-		$urlArray = array();
-		$urlArray[] = $pageUrl;
-		$urlArray[] = $opUrl;
-		$urlArray = array_merge($urlArray,$request->getRequestedArgs());
-		$urlArrayLength = sizeof($urlArray);
-
-		// get path components specified in the plugin settings
-		$settingPath = $this->getSetting($context->getId(),'langsci_hallOfFame_path');
-
-		if (!ctype_alpha(substr($settingPath,0,1))&&!ctype_digit(substr($settingPath,0,1))) {
-			return false;
-		}
-		$settingPathArray = explode("/",$settingPath);
-		$settingPathArrayLength = sizeof($settingPathArray);
-		if ($settingPathArrayLength==1) {
-			$settingPathArray[] = 'index';
-		}
-
-		// compare path and path settings
-		$goToHallOfFame = false;
-		if ($settingPathArray==$urlArray){
-			$goToHallOfFame = true;
-		}
-		return $goToHallOfFame;
-	}	
-	
-	
 	//
 	// Implement template methods from GenericPlugin.
 	//
@@ -174,48 +115,8 @@ class HallOfFamePlugin extends GenericPlugin {
 				return new JSONMessage(true, $form->fetch($request));
 		}
 		return parent::manage($args, $request);
-	}			
-	
-	/**
-	 * @copydoc Plugin::manage()
-	 */
-/*	 
-	function manage($args, $request) {
-		$this->import('HallOfFameSettingsForm');
-		switch($request->getUserVar('verb')) {
-			case 'settings':
-				$settingsForm = new HallOfFameSettingsForm($this);
-				$settingsForm->initData();
-				return new JSONMessage(true, $settingsForm->fetch($request));
-			case 'save':
-				$settingsForm = new HallOfFameSettingsForm($this);
-				$settingsForm->readInputData();
-				if ($settingsForm->validate()) {
-					$settingsForm->execute();
-					$notificationManager = new NotificationManager();
-					$notificationManager->createTrivialNotification(
-						$request->getUser()->getId(),
-						NOTIFICATION_TYPE_SUCCESS,
-						array('contents' => __('plugins.generic.hallOfFame.settings.saved'))
-					);
-					return new JSONMessage(true);
-				}
-				return new JSONMessage(true, $settingsForm->fetch($request));
-		}
-		return parent::manage($args, $request);
 	}
 
-*/
-
-
-
-
-
-
-	// PKPPlugin::getTemplatePath
-//	function getTemplatePath() {
-//		return parent::getTemplatePath() . 'templates/';
-//	}
 }
 
 ?>

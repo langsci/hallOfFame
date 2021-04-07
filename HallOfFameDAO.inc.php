@@ -19,7 +19,6 @@ class HallOfFameDAO extends DAO {
 		parent::__construct();
 	}
 
-
 	function getPublicationDates($context_id) {
 
 		$result = $this->retrieve(
@@ -97,8 +96,7 @@ class HallOfFameDAO extends DAO {
 	function getAchievements($user_group_id) {
 
 		//$result = $this->retrieve('select user_id,submission_id from stage_assignments where user_group_id='.$userGroup.' and submission_id IN (select submission_id from published_submissions WHERE date_published IS NOT NULL)');
-		
-		
+
 		$result = $this->retrieve('select user_id, submission_id from stage_assignments where user_group_id='.$user_group_id.' and submission_id in (select submission_id from publications where status=3)');
 		
 		if ($result->RecordCount() == 0) {

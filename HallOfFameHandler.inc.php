@@ -20,232 +20,254 @@ import('plugins.generic.hallOfFame.HallOfFameDAO');
 
 class HallOfFameHandler extends Handler {
 
+	private $_plugin;
 	private $prizes = array('gold','silver','bronze','series','recent');
-
-	//function HallOfFameHandler() {
-	//	parent::Handler();
-	//}
 	
-	function halloffame($args, $request) {
+	/**
+	 * Constructor
+	 */	
+	function __construct() {
+		$this->_plugin = PluginRegistry::getPlugin('generic', HALLOFFAME_PLUGIN_NAME);
+		parent::__construct();
+	}
+	
+	function getDataForUsergroup($userGroupName,&$request) {
 		
 		$context = $request->getContext();
 		$contextId = $context->getId();
-		$hallOfFameDAO = new HallOfFameDAO();		
-		$userDao = DAORegistry::getDAO('UserDAO');		
-		$plugin = PluginRegistry::getPlugin('generic', HALLOFFAME_PLUGIN_NAME);
-		
-		// get setting parameters
-		//$settingPath = $plugin->getSetting($contextId,'langsci_hallOfFame_path');
-		$settingUserGroups = $plugin->getSetting($contextId,'langsci_hallOfFame_userGroups');
-		//$settingUnifiedStyleSheetForLinguistics = $plugin->getSetting($contextId,'langsci_hallOfFame_unifiedStyleSheetForLinguistics');
-		//$settingLinksToPublicProfile = $plugin->getSetting($contextId,'langsci_hallOfFame_linksToPublicProfile');
-		$settingStartCounting = $plugin->getSetting($contextId,'langsci_hallOfFame_startCounting');
-		$settingRecency = $plugin->getSetting($contextId,'langsci_hallOfFame_recentDate');
-		$settingMinNumberOfSeries = $plugin->getSetting($contextId,'langsci_hallOfFame_minNumberOfSeries');
-		$settingPercentileRanks = $plugin->getSetting($contextId,'langsci_hallOfFame_percentileRanks');
-		$settingMedalCount = $plugin->getSetting($contextId,'langsci_hallOfFame_medalCount');
-		//$settingIncludeCommentators = $plugin->getSetting($contextId,'langsci_hallOfFame_includeCommentators');		
-		
-		// check and transform setting parameters
-		$userGroups = explode(",",$settingUserGroups);
-		if ($settingUserGroups=="") {
-			$userGroups = array();
-		}
-		$settingPercentileRanksArray = explode(",",$settingPercentileRanks);
-		if ($settingPercentileRanks=="") {
-			$settingPercentileRanksArray = array();
-		}
-		// empty string or no number: all users will be displayed in the medal count
-		if (!ctype_digit($settingMedalCount)) {
-			$settingMedalCount='';
-		}
-		$recencyDate=null;
-		if (ctype_digit($settingRecency)) {
-			$recencyDate = new DateTime();
-			$recencyDate->sub(new DateInterval('P'.$settingRecency.'M'));
-		}
-
-		// get publication dates for all submission (publication date = publication date of publication format starting with "PDF"
-		//$publicationDates = $hallOfFameDAO->getPDFPublicationDates($contextId);		
-		$publicationDates = $hallOfFameDAO->getPublicationDates($contextId);		
-		
+		$hallOfFameDAO = new HallOfFameDAO();
+		$userDao = DAORegistry::getDAO('UserDAO');	
+		$userGroupId = $hallOfFameDAO->getUserGroupIdByName($userGroupName,$contextId);
 		$userGroupInfo = array();
-		$medalCount = array();
-		$maxNameLength=0;		
-		for ($i=0; $i<sizeof($userGroups); $i++) {
+		
+		if ($userGroupId) {		
 			
-			// get user group
-			$userGroupName = trim($userGroups[$i]);
-			$userGroupId = $hallOfFameDAO->getUserGroupIdByName($userGroupName,$contextId);
-			
-			$userGroupInfo[$i]['userGroupId'] = $userGroupId;
-			$userGroupInfo[$i]['userGroupName'] = $userGroupName;			
-			if ($userGroupId) {
-				// get achievements of this user group
-				$achievements = $hallOfFameDAO->getAchievements($userGroupId);
-
-				// remove userIds who do not exists anymore (nicht mehr nötig? merge scheint auch die assignments zu entfernen)
-				$this->removeNonExistingUsers($achievements);
-
-				// remove users who do not want to be listed in the hall of fame
-				$this->removeAnonymousUsers($achievements);
-
-				// remove submissions that where published before date x
-				if (strlen($settingStartCounting)==8 && ctype_digit($settingStartCounting)) {					
-					$this->removeSubmissionsBeforeDate($achievements,$publicationDates,$settingStartCounting);
-				}
-				
-				// get rank percentile for all users 
-				$rankPercentiles = $this->getRankPercentiles($achievements);
-
-				// get number of achievements for each user
-				$numberOfAchievements = $this->getNumberOfAchievements($achievements);
-				
-				// get users who have achievements in max number of series		
-				if (ctype_digit($settingMinNumberOfSeries)) {
-					$maxSeriesResults = $this->getMaxSeriesUsers($achievements);
-					$userGroupInfo[$i]['maxSeries'] = $maxSeriesResults['maxSeries'];
-					$userGroupInfo[$i]['maxSeriesUsers'] = array();
-					if ($userGroupInfo[$i]['maxSeries']>=$settingMinNumberOfSeries) {
-						$userGroupInfo[$i]['maxSeriesUsers'] = $maxSeriesResults['maxSeriesUsers'];
-					}
-				}
-
-				// get users who have max achievements since $recencyDate
-				if ($recencyDate) {
-					$recencyAchievements = $achievements;								
-					$this->removeSubmissionsBeforeDate($recencyAchievements,$publicationDates,$recencyDate->format('Ymd'));				
-					$recentMaxAchievementResults = $this->getMaxAchievementUsers($recencyAchievements);
-					$userGroupInfo[$i]['maxRecentAchievements']= $recentMaxAchievementResults['maxAchievements'];
-					$userGroupInfo[$i]['maxRecentAchievementUsers'] = $recentMaxAchievementResults['maxAchievementUsers'];										
-				}
+			$settingStartCounting = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_startCounting');
+			$settingMinNumberOfSeries = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_minNumberOfSeries');
+			$settingRecency = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_recentDate');
+			$settingMedalCount = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_medalCount');
+			$settingPercentileRanks = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_percentileRanks');
 	
-				$userData = array();
-				$userData['gold'] = array();
-				$userData['silver'] = array();
-				$userData['bronze'] = array();
-				$keys = array_keys($achievements);	
-				
-				// loop through all achievements
-				for ($ii=0; $ii<sizeof($achievements); $ii++) {
-					//if ($ii==2) {break;}
-
-					$userId = $achievements[$keys[$ii]]['user_id'];
-					$submissionId = $achievements[$keys[$ii]]['submission_id'];
-					$user = $userDao->getById($userId);
-					
-					$numberOfAchievementsUser = $numberOfAchievements[$userId];
-					$rankPercentile = round($rankPercentiles[$numberOfAchievementsUser],1);
-					// reserve spance for the name: look for the longest name or 20
-					$maxNameLength = max($maxNameLength,strlen($user->getGivenName('en_US'). " " . $user->getFamilyName('en_US')));
-					if ($maxNameLength>20) {
-						$maxNameLength = 20;
-					}
-
-				
-					// add the link to the profile 
-					$linkToProfile = false;
-					/*
-					if ($langsciCommonDAO->existsTable('langsci_website_settings') &&
-						$langsciCommonDAO->getUserSetting($userId,'publicProfile')=='true' &&
-						$settingLinksToPublicProfile) {
-						$publicProfilesPlugin = PluginRegistry::getPlugin('generic','publicprofilesplugin');
-						if ($publicProfilesPlugin) {
-							$pathPublicProfiles = explode("/", $publicProfilesPlugin->getSetting($contextId, 'langsci_publicProfiles_path'));
-							$numberOfElementsInPath = sizeof($pathPublicProfiles);
-							if ($numberOfElementsInPath==1) {
-								$linkToProfile = $request->url(null,$pathPublicProfiles[0],$userId);
-							} else if ($numberOfElementsInPath==2) {
-								$linkToProfile = $request->url(null,$pathPublicProfiles[0],$pathPublicProfiles[1],$userId);
-							} else if ($numberOfElementsInPath>2) {
-								$tail="";
-								for ($iii=2; $iii<$numberOfElementsInPath;$iii++) {
-									$tail = $tail."/".$pathPublicProfiles[$iii];
-								}
-								$tail=$tail."/".$userId;
-								$linkToProfile = $request->url(null,$pathPublicProfiles[0],$pathPublicProfiles[1]).$tail;		
-							}
-						}
-					}*/
-
-					// initialize medal count for each user with medals
-					if (!strcmp($settingMedalCount,'0')==0 && !isset($medalCount[$userId])) {
-						$this->initializeMedalCount($medalCount,$userId,$user,$linkToProfile);
-					}
-
-					// get medal for this user in this user group
-					$medal = 'bronze';
-					if ($rankPercentile<=$settingPercentileRanksArray[0]) {
-						$medal = 'gold';
-					} else if ($rankPercentile<=$settingPercentileRanksArray[1]) {
-						$medal = 'silver';
-					}
-					if (!strcmp($settingMedalCount,'0')==0) {
-						$medalCount[$userId]['type'][$medal][$userGroupId]=true;
-					}
-					
-					// get user data
-					$userData[$medal]['user'][$userId]['rankPercentile'] = 100-round($rankPercentile,0);
-					$userData[$medal]['user'][$userId]['userId'] = $userId;
-					$userData[$medal]['user'][$userId]['fullName'] = $user->getGivenName('en_US'). " " . $user->getFamilyName('en_US');
-					$userData[$medal]['user'][$userId]['lastName'] = $user->getFamilyName('en_US');
-					$userData[$medal]['user'][$userId]['linkToProfile'] = $linkToProfile;
-
-					// get submission data
-					$userData[$medal]['user'][$userId]['submissionId'] = $submissionId;
-					if (isset($userData[$medal]['user'][$userId]['numberOfSubmissions'])) {
-						$userData[$medal]['user'][$userId]['numberOfSubmissions']++;
-					} else {
-						$userData[$medal]['user'][$userId]['numberOfSubmissions']=1;
-					}
-					if ($settingUnifiedStyleSheetForLinguistics) {   
-						$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getBiblioLinguistStyle";
-							//getBiblioLinguistStyle($submissionId);
-					} else {
-						$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
-							//getSubmissionPresentationString($submissionId);
-					}
-
-					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['path'] =
-							$request->url(null,'catalog','book',$submissionId);
 	
-					// get users with a series star
-					$userData[$medal]['user'][$userId]['maxSeriesUser'] = false;
-					if (in_array($userId,$userGroupInfo[$i]['maxSeriesUsers'])) {
-						$userData[$medal]['user'][$userId]['maxSeriesUser'] = true;
-						if (!strcmp($settingMedalCount,'0')==0) {
-							$medalCount[$userId]['type']['series'][$userGroupId] = true;
-						}
-					}	
-					
-					// get users with a recent star
-					if (in_array($userId,$userGroupInfo[$i]['maxRecentAchievementUsers'])) {
-						$userData[$medal]['user'][$userId]['recentMaxAchievementUser'] = true;
-						if (!strcmp($settingMedalCount,'0')==0) {
-							$medalCount[$userId]['type']['recent'][$userGroupId]=true;
-						}
-					}	
-				}					
-				// get number of prizes for each user (sum up over user groups)
-				if (!strcmp($settingMedalCount,'0')==0) {
-					$userIds = array_keys($medalCount);
-					for ($ii=0; $ii<sizeof($medalCount); $ii++) {
-						for ($iii=0; $iii<sizeof($this->prizes); $iii++) {
-							if (!empty($medalCount[$userIds[$ii]]['type'][$this->prizes[$iii]][$userGroupId])) {
-								$medalCount[$userIds[$ii]]['numberOf'.$this->prizes[$iii]]++;						
-							}
-						}
-					}
-				}				
-				
-				if (!empty($userData['gold'])) usort($userData['gold']['user'],'sort_users');
-				if (!empty($userData['silver'])) usort($userData['silver']['user'],'sort_users');
-				if (!empty($userData['bronze'])) usort($userData['bronze']['user'],'sort_users');
-
-				$userGroupInfo[$i]['userData'] = $userData;
-				$userGroupInfo[$i]['maxAchievements'] = max($numberOfAchievements);								
+			// check and transform setting parameters
+			$settingPercentileRanksArray = explode(",",$settingPercentileRanks);
+			if ($settingPercentileRanks=="") {
+				$settingPercentileRanksArray = array();
 			}
+			
+			$maxNameLength=0;			
+			
+			// get achievements of this user group (=array of user-submission-arrays)
+			$achievements = $hallOfFameDAO->getAchievements($userGroupId);
+
+			// remove userIds who do not exists anymore (nicht mehr nötig? merge scheint auch die assignments zu entfernen)
+			$this->removeNonExistingUsers($achievements);
+
+			// remove users who do not want to be listed in the hall of fame, xxx todo: Eingabe
+			$this->removeAnonymousUsers($achievements);		
+			
+			// get publication dates
+			$publicationDates = $hallOfFameDAO->getPublicationDates($contextId);
+/*		
+$myfile = 'test.txt';
+$newContentCF5344 = print_r(sizeof($this->getNumberOfAchievements($achievements)), true);
+$contentCF2343 = file_get_contents($myfile);
+$contentCF2343 .= "\n noa : " . $newContentCF5344 ;
+file_put_contents($myfile, $contentCF2343 );*/	
+
+			// remove submissions that where published before date x
+			if (strlen($settingStartCounting)==8 && ctype_digit($settingStartCounting)) {					
+				$this->removeSubmissionsBeforeDate($achievements,$publicationDates,$settingStartCounting);
+			}	
+
+			// get rank percentile for all users 
+			$rankPercentiles = $this->getRankPercentiles($achievements);
+
+			// get number of achievements for each user
+			$numberOfAchievements = $this->getNumberOfAchievements($achievements);
+
+			// get users who have achievements in max number of series
+			if (ctype_digit($settingMinNumberOfSeries)) {
+				$maxSeriesResults = $this->getMaxSeriesUsers($achievements);
+				$userGroupInfo['maxSeries'] = $maxSeriesResults['maxSeries'];
+				$userGroupInfo['maxSeriesUsers'] = array();
+				if ($userGroupInfo['maxSeries']>=$settingMinNumberOfSeries) {
+					$userGroupInfo['maxSeriesUsers'] = $maxSeriesResults['maxSeriesUsers'];
+				}
+			}
+
+			// get users who have max achievements since $recencyDate
+			$recencyDate=null;
+			if (ctype_digit($settingRecency)) {
+				$recencyDate = new DateTime();
+				$recencyDate->sub(new DateInterval('P'.$settingRecency.'M'));
+			}
+			if ($recencyDate) {
+				$recencyAchievements = $achievements;								
+				$this->removeSubmissionsBeforeDate($recencyAchievements,$publicationDates,$recencyDate->format('Ymd'));				
+				$recentMaxAchievementResults = $this->getMaxAchievementUsers($recencyAchievements);
+				$userGroupInfo['maxRecentAchievements']= $recentMaxAchievementResults['maxAchievements'];
+				$userGroupInfo['maxRecentAchievementUsers'] = $recentMaxAchievementResults['maxAchievementUsers'];										
+			}
+
+			$userData = array();
+			$userData['gold'] = array();
+			$userData['silver'] = array();
+			$userData['bronze'] = array();
+			$keys = array_keys($achievements);	
+				
+			// loop through all achievements
+			for ($ii=0; $ii<sizeof($achievements); $ii++) {
+				//if ($ii==2) {break;}
+
+				$userId = $achievements[$keys[$ii]]['user_id'];
+				$submissionId = $achievements[$keys[$ii]]['submission_id'];
+				$user = $userDao->getById($userId);
+					
+				$numberOfAchievementsUser = $numberOfAchievements[$userId];
+				$rankPercentile = round($rankPercentiles[$numberOfAchievementsUser],1);
+				// reserve spance for the name: look for the longest name or 20
+				$maxNameLength = max($maxNameLength,strlen($user->getGivenName('en_US'). " " . $user->getFamilyName('en_US')));
+				if ($maxNameLength>17) {  // orig: 20
+					$maxNameLength = 17;
+				}
+				
+				// add the link to the profile 
+				$linkToProfile = false;
+
+				// initialize medal count for each user with medals
+				if (!strcmp($settingMedalCount,'0')==0 && !isset($medalCount[$userId])) {
+					$this->initializeMedalCount($medalCount,$userId,$user,$linkToProfile);
+				}
+
+				// get medal for this user in this user group
+				$medal = 'bronze';
+				if ($rankPercentile<=$settingPercentileRanksArray[0]) {
+					$medal = 'gold';
+				} else if ($rankPercentile<=$settingPercentileRanksArray[1]) {
+					$medal = 'silver';
+				}
+				if (!strcmp($settingMedalCount,'0')==0) {
+					$medalCount[$userId]['type'][$medal][$userGroupId]=true;
+				}
+				
+				// get user data
+				$userData[$medal]['user'][$userId]['rankPercentile'] = 100-round($rankPercentile,0);
+				$userData[$medal]['user'][$userId]['userId'] = $userId;
+				$userData[$medal]['user'][$userId]['fullName'] = $user->getGivenName('en_US'). " " . $user->getFamilyName('en_US');
+				$userData[$medal]['user'][$userId]['lastName'] = $user->getFamilyName('en_US');
+				$userData[$medal]['user'][$userId]['linkToProfile'] = $linkToProfile;
+
+				// get submission data
+				$userData[$medal]['user'][$userId]['submissionId'] = $submissionId;
+				if (isset($userData[$medal]['user'][$userId]['numberOfSubmissions'])) {
+					$userData[$medal]['user'][$userId]['numberOfSubmissions']++;
+				} else {
+					$userData[$medal]['user'][$userId]['numberOfSubmissions']=1;
+				}
+				if ($settingUnifiedStyleSheetForLinguistics) {   
+					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getBiblioLinguistStyle";
+						//getBiblioLinguistStyle($submissionId);
+				} else {
+					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
+						//getSubmissionPresentationString($submissionId);
+				}
+
+				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['path'] =
+					$request->url(null,'catalog','book',$submissionId);
+	
+				// get users with a series star
+				$userData[$medal]['user'][$userId]['maxSeriesUser'] = false;
+				if (in_array($userId,$userGroupInfo['maxSeriesUsers'])) {
+					$userData[$medal]['user'][$userId]['maxSeriesUser'] = true;
+					if (!strcmp($settingMedalCount,'0')==0) {
+						$medalCount[$userId]['type']['series'][$userGroupId] = true;
+					}
+				}	
+					
+				// get users with a recent star
+				if (in_array($userId,$userGroupInfo['maxRecentAchievementUsers'])) {
+					$userData[$medal]['user'][$userId]['recentMaxAchievementUser'] = true;
+					if (!strcmp($settingMedalCount,'0')==0) {
+						$medalCount[$userId]['type']['recent'][$userGroupId]=true;
+					}
+				}	
+			}	// end loop through all achievements
+			
+			// get number of prizes for each user (sum up over user groups)
+			if (!strcmp($settingMedalCount,'0')==0) {
+				$userIds = array_keys($medalCount);
+				for ($ii=0; $ii<sizeof($medalCount); $ii++) {
+					for ($iii=0; $iii<sizeof($this->prizes); $iii++) {
+						if (!empty($medalCount[$userIds[$ii]]['type'][$this->prizes[$iii]][$userGroupId])) {
+							$medalCount[$userIds[$ii]]['numberOf'.$this->prizes[$iii]]++;						
+						}
+					}
+				}
+			}				
+				
+			if (!empty($userData['gold'])) usort($userData['gold']['user'],'sort_users');
+			if (!empty($userData['silver'])) usort($userData['silver']['user'],'sort_users');
+			if (!empty($userData['bronze'])) usort($userData['bronze']['user'],'sort_users');
+
+			$userGroupInfo['userData'] = $userData;
+			$userGroupInfo['maxAchievements'] = max($numberOfAchievements);
+			$userGroupInfo['medalCount'] = $medalCount;
+			$userGroupInfo['maxNameLength'] = $maxNameLength;
+			
+			return $userGroupInfo;
 		}
+		return null;
+	}
+	
+	function halloffame($args, $request) {
+	
+		$reload = false;
+		$fileProofreader = 'plugins/generic/hallOfFame/json/proofreader.json';
+		$fileTypesetter = 'plugins/generic/hallOfFame/json/typesetter.json';		
+		
+		$dataProofreader = array();
+		$dataTypesetter = array();		
+		if ($reload) {
+			$dataProofreader = $this->getDataForUsergroup("Proofreader",$request);		
+			$dataTypesetter = $this->getDataForUsergroup("Typesetter",$request);
+			file_put_contents($fileProofreader, json_encode($dataProofreader));
+			file_put_contents($fileTypesetter, json_encode($dataTypesetter));
+		} else {
+			$dataProofreader = json_decode(file_get_contents($fileProofreader),TRUE);
+			$dataTypesetter = json_decode(file_get_contents($fileTypesetter),TRUE);
+		}
+
+		$maxNameLength = max($dataProofreader['maxNameLength'],$dataTypesetter['maxNameLength']);
+		
+		$medalCount = $dataProofreader['medalCount'];
+		foreach($dataTypesetter['medalCount'] as $userId => $data) {
+			if (!$medalCount[$userId]) {
+				$medalCount[$userId] = $data;
+			} else {
+				$medalCount[$userId]['numberOfgold'] += $data['numberOfgold'];
+				$medalCount[$userId]['numberOfsilver'] += $data['numberOfsilver'];
+				$medalCount[$userId]['numberOfbronze'] += $data['numberOfbronze'];
+				$medalCount[$userId]['numberOfseries'] += $data['numberOfseries'];
+				$medalCount[$userId]['numberOfrecent'] += $data['numberOfrecent'];
+				$medalCount[$userId]['type']['gold']+=$data['type']['gold'];
+				$medalCount[$userId]['type']['silver']+=$data['type']['silver'];
+				$medalCount[$userId]['type']['bronze']+=$data['type']['bronze'];					
+			}			
+		}
+		
+
+		
+
+
+		
+
+
+
+		
+		
+		
+	
 	
 		if (!strcmp($settingMedalCount,'0')==0) {
 
@@ -263,24 +285,62 @@ class HallOfFameHandler extends Handler {
 		}
 
 		$templateMgr = TemplateManager::getManager($request);
-		$this->setupTemplate($request); // important for getting the correct menu
+		$this->setupTemplate($request); 
+		
 		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
-		$templateMgr->assign('userGroups',$userGroups);
+		//$templateMgr->assign('userGroups',$userGroups);
 		$templateMgr->assign('medalCount',$medalCount);
 		$templateMgr->assign('settingMedalCount',$settingMedalCount);
 		$templateMgr->assign('maxNameLength',$maxNameLength);
-		$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
-		$templateMgr->assign('settingRecency',$settingRecency);
-		$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
-		$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);
-		$templateMgr->assign('userGroupNames',$userGroupNames);
-		$templateMgr->assign('proofreader',$userGroupInfo[0]);
-		$templateMgr->assign('typesetter',$userGroupInfo[1]);
+		//$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
+		//$templateMgr->assign('settingRecency',$settingRecency);
+		//$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
+		//$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);
+		//$templateMgr->assign('userGroupNames',$userGroupNames);
+		$templateMgr->assign('proofreader',$dataProofreader);
+		$templateMgr->assign('typesetter',$dataTypesetter);
 		$templateMgr->assign('baseUrl',$request->getBaseUrl());	
 		$templateMgr->assign('imageDirectory','plugins/generic/hallOfFame/img');
-		$templateMgr->display($plugin->getTemplateResource('hallOfFame.tpl'));	
-			
+		$templateMgr->display($this->_plugin->getTemplateResource('hallOfFame.tpl'));	
+	
+	}
+
+	function getMedalCountRanks(&$medalCount) {
+		$keys = array_keys($medalCount);
+		$rank = 0;
+		$rankSave = 0;
 		
+		for ($i=0; $i<sizeof($medalCount); $i++) {
+
+			$achievements2 = array($medalCount[$keys[$i]]['numberOfgold'],
+								   $medalCount[$keys[$i]]['numberOfsilver'],
+								   $medalCount[$keys[$i]]['numberOfbronze'],
+								   $medalCount[$keys[$i]]['numberOfseries'],
+								   $medalCount[$keys[$i]]['numberOfrecent']
+							);
+
+			if ($i==0) {
+				$better = true;
+			} else {
+				$better = false;
+				for ($ii=0; $ii<sizeof($achievements1); $ii++) {
+					if ($achievements1[$ii]>$achievements2[$ii]) {
+						$better = true;
+						$rank = $rank + $rankSave;
+						$rankSave = 0;
+						break;
+					}
+				}
+			}
+
+			if ($better) {
+				$rank++;
+			} else {
+				$rankSave++;
+			}
+			$medalCount[$keys[$i]]['rank'] = $rank;
+			$achievements1 = $achievements2;
+		}
 	}
 	
 	function initializeMedalCount(&$medalCount, $userId, $user, $linkToProfile) {
@@ -290,8 +350,8 @@ class HallOfFameHandler extends Handler {
 		}
 		$medalCount[$userId]['name'] = $user->getGivenName('en_US'). " " . $user->getFamilyName('en_US');
 		$medalCount[$userId]['linkToProfile'] = $linkToProfile;
-	}	
-
+	}		
+	
 	// get the users with maximal achievements before date "date"
 	function getMaxAchievementUsers($achievements) {
 
@@ -329,19 +389,42 @@ class HallOfFameHandler extends Handler {
 		$results['maxAchievementUsers'] = $maxAchievementUsers;
 
 		return $results;
-	}
-	
-	
-	function getSeriesId($submissionId) {
-		
-		$submission = Services::get('submission')->get($submissionId);
-		if ($submission) {
-			return $submission->getSeriesId();
-		}
-		return null;
 	}	
 	
-	// return the maximum number of series that users have worked for MonographDAO
+	// remove users before date
+	function removeSubmissionsBeforeDate(&$achievements,$publicationDates,$settingStartCounting) {
+		if ($achievements) {
+			$keys = array_keys($achievements);
+			$end = sizeof($achievements);			
+			for ($i=0; $i<$end; $i++) {				
+				$submissionId = $achievements[$keys[$i]]['submission_id'];
+				$publicationDate = str_replace("-","",$publicationDates[$submissionId]);
+				if (!$publicationDate || strcmp($publicationDate,$settingStartCounting)<0) {
+					unset($achievements[$keys[$i]]);
+				}
+			} 
+		}
+	}		
+	
+	function getNumberOfAchievements($achievements) {
+		
+		if (!$achievements) {
+			return array();
+		}
+
+		// initalize array
+		$numberOfAchievements = array();
+		foreach ($achievements as $key => $achievement) {
+			$numberOfAchievements[$achievement['user_id']]=0;
+		}
+		// count achievements for each users
+		foreach ($achievements as $key => $achievement) {
+			$numberOfAchievements[$achievement['user_id']]++;
+		}
+		
+		return $numberOfAchievements;
+	}
+
 	// return users who worked on the maximal number of series
 	function getMaxSeriesUsers($achievements) {
 
@@ -387,6 +470,15 @@ class HallOfFameHandler extends Handler {
 		$results['maxSeries'] = $maxSeries;
 		
 		return $results;
+	}
+	
+	function getSeriesId($submissionId) {
+		
+		$submission = Services::get('submission')->get($submissionId);
+		if ($submission) {
+			return $submission->getSeriesId();
+		}
+		return null;
 	}	
 	
 	// get the rank percentiles for different number of submissions
@@ -409,21 +501,23 @@ class HallOfFameHandler extends Handler {
 			$numberOfSubmissionsPerUser[$userId]['numberOfSubmissions']++;
 		}
 	
+		// sort by number of submissions (sets key to 0, 1, 2, 3, ...)
 		usort($numberOfSubmissionsPerUser,'sort_by_number_of_submissions');
 		$numberOfUsers = sizeof($numberOfSubmissionsPerUser);
-
+				
 		// get data on frequencies
 		$frequencyOfNumberOfSubmission = array();
-		for ($i=0; $i<$numberOfUsers; $i++) { 
+		for ($i=0; $i<$numberOfUsers; $i++) {
 			$freq = $numberOfSubmissionsPerUser[$i]['numberOfSubmissions'];
 			$frequencyOfNumberOfSubmission[$freq]['count']=0;	
-			$frequencyOfNumberOfSubmission[$freq]['sum']=0;
+			$frequencyOfNumberOfSubmission[$freq]['sum']=0;		
 		}
+
 		for ($i=0; $i<$numberOfUsers; $i++) { 
-			$userId = $numberOfSubmissionsPerUser[$i]['userId'];
+			$userId = $numberOfSubmissionsPerUser[$i]['userId'];		
 			$freq = $numberOfSubmissionsPerUser[$i]['numberOfSubmissions'];
-			$frequencyOfNumberOfSubmission[$freq]['value'] = $freq;
-			$frequencyOfNumberOfSubmission[$freq]['count']++;	
+			$frequencyOfNumberOfSubmission[$freq]['value'] = $freq;          // frequency value, e.g. worked on 22 submissions
+			$frequencyOfNumberOfSubmission[$freq]['count']++;	             // how often does this frequency value occur
 			$numberOfSubmissionsPerUser[$userId]['rank'] = $i + 1;		
 			$frequencyOfNumberOfSubmission[$freq]['sum'] += $numberOfSubmissionsPerUser[$userId]['rank'] ;
 		}
@@ -446,25 +540,8 @@ class HallOfFameHandler extends Handler {
 			$numberOfSubmissions=$values[$i];
 			$rankPercentiles[$numberOfSubmissions] = $frequencyOfNumberOfSubmission[$numberOfSubmissions]['rankPercentile'];
 		}	
-
 		return $rankPercentiles;
-	}	
-	
-	
-	// remove users
-	function removeSubmissionsBeforeDate(&$achievements,$publicationDates,$settingStartCounting) {
-		if ($achievements) {
-			$keys = array_keys($achievements);
-			$end = sizeof($achievements);			
-			for ($i=0; $i<$end; $i++) {				
-				$submissionId = $achievements[$keys[$i]]['submission_id'];
-				$publicationDate = str_replace("-","",$publicationDates[$submissionId]);
-				if (!$publicationDate || strcmp($publicationDate,$settingStartCounting)<0) {
-					unset($achievements[$keys[$i]]);
-				}
-			} 
-		}
-	}	
+	}
 
 	// remove users who do not exist anymore (nicht mehr nötig? merge scheint auch die assignments zu entfernen)
 	function removeNonExistingUsers(&$achievements) {
@@ -495,418 +572,38 @@ class HallOfFameHandler extends Handler {
 			}
 		}
 	}	
-	
-	// get 'Publication date' for publication format 'PDF'
-	function getPublicationDate($submissionId) {
-
-/*
-		$publishedMonographDAO = new PublishedMonographDAO;
- 		$publishedMonograph = $publishedMonographDAO->getById($submissionId);
-		if ($publishedMonograph) {
-
-			$pubformats = $publishedMonograph->getPublicationFormats();
-			for ($i=0; $i<sizeof($pubformats); $i++) {
-
-				$formatName = $pubformats[$i]->getName(AppLocale::getLocale());
-				if ($formatName=="PDF") {
-
-					$pubdates = $pubformats[$i]->getPublicationDates();
-					$pubdatesArray = $pubdates->toArray();
-					for ($ii=0;$ii<sizeof($pubdatesArray);$ii++) {
-						// role id "01": publication date
-						if ($pubdatesArray[$ii]->getRole()=="01") {
-							return $pubdatesArray[$ii]->getDate();
-						}
-					}
-				}
-			}
-		}*/
-		return null;
-	}
-
-
-	
-//-----------------------------------------------------------------------------------------------//
-	
-	
-
-	function viewHallOfFame($args, $request) {
-
-		$press = $request->getPress();
-		$context = $request->getContext();
-		$contextId = $context->getId();
-		$hallOfFameDAO = new HallOfFameDAO;
-		$langsciCommonDAO = new LangsciCommonDAO;
-		$userDao = DAORegistry::getDAO('UserDAO');		
-		
-		// get setting parameters
-		$plugin = PluginRegistry::getPlugin('generic', HALLOFFAME_PLUGIN_NAME);
-		$settingPath = $plugin->getSetting($contextId,'langsci_hallOfFame_path');
-		$settingUserGroups = $plugin->getSetting($contextId,'langsci_hallOfFame_userGroups');
-		$settingUnifiedStyleSheetForLinguistics = $plugin->getSetting($contextId,'langsci_hallOfFame_unifiedStyleSheetForLinguistics');
-		$settingLinksToPublicProfile = $plugin->getSetting($contextId,'langsci_hallOfFame_linksToPublicProfile');
-		$settingStartCounting = $plugin->getSetting($contextId,'langsci_hallOfFame_startCounting');
-		$settingRecency = $plugin->getSetting($contextId,'langsci_hallOfFame_recentDate');
-		$settingMinNumberOfSeries = $plugin->getSetting($contextId,'langsci_hallOfFame_minNumberOfSeries');
-		$settingPercentileRanks = $plugin->getSetting($contextId,'langsci_hallOfFame_percentileRanks');
-		$settingMedalCount = $plugin->getSetting($contextId,'langsci_hallOfFame_medalCount');
-		$settingIncludeCommentators = $plugin->getSetting($contextId,'langsci_hallOfFame_includeCommentators');
-
-		// check and transform setting parameters
-		$userGroupsArray = explode(",",$settingUserGroups);
-		if ($settingUserGroups=="") {
-			$userGroupsArray = array();
-		}
-		$settingPercentileRanksArray = explode(",",$settingPercentileRanks);
-		if ($settingPercentileRanks=="") {
-			$settingPercentileRanksArray = array();
-		}
-		// empty string or no number: all users will be displayed in the medal count
-		if (!ctype_digit($settingMedalCount)) {
-			$settingMedalCount='';
-		}
-		$recencyDate=null;
-		if (ctype_digit($settingRecency)) {
-			$recencyDate = new DateTime();
-			$recencyDate->sub(new DateInterval('P'.$settingRecency.'M'));
-		}
-
-		// get data for the hall of fame
-		$userGroups = array();
-		$medalCount = array();
-		$userGroupNames = array();
-		$maxNameLength=0;
-		for ($i=0; $i<sizeof($userGroupsArray); $i++) {
-
-			// get user group
-			$userGroupName = trim($userGroupsArray[$i]);
-			$userGroupId = $langsciCommonDAO->getUserGroupIdByName($userGroupName,$contextId);
-
-			if ($userGroupId) {
-
-			$userGroups[$i]['userGroupId'] = $userGroupId;
-			$userGroups[$i]['userGroupName'] = $userGroupName;
-
-			$userGroupNames[$userGroupId] = $userGroupName;
-
-			// get achievements of this user group
-			$achievements = $hallOfFameDAO->getAchievements($userGroupId);
-
-			// remove userIds who do not exists anymore
-			$this->removeNonExistingUsers($achievements);
-
-			// remove users who do not want to be listed in the hall of fame
-			$this->removeAnonymousUsers($achievements);
-
-			// remove submissions that where published before date x
-			if (strlen($settingStartCounting)==8 && ctype_digit($settingStartCounting)) {
-				$this->removeSubmissionsBeforeDate($achievements,$settingStartCounting);
-			}
-
-			// get rank percentile for all users 
-			$rankPercentiles = $this->getRankPercentiles($achievements);
-
-			// get number of achievements for each user
-			$numberOfAchievements = $this->getNumberOfAchievements($achievements);
-
-			// get users who have achievements in max number of series
-			$maxSeriesUsers = array();
-			if (ctype_digit($settingMinNumberOfSeries)) {
-				$maxSeriesResults = $this->getMaxSeriesUsers($achievements);
-				$userGroups[$i]['maxSeries'] = $maxSeriesResults['maxSeries']; 
-				if ($userGroups[$i]['maxSeries']>=$settingMinNumberOfSeries) {
-					$maxSeriesUsers = $maxSeriesResults['maxSeriesUsers'];
-				}
-			}
- 
-			// get users who have max achievements since $recencyDate
-			$recentMaxAchievementUsers = array();
-			if ($recencyDate) {
-				$recentMaxAchievementResults = $this->getMaxAchievementUsers($achievements,$recencyDate->format('Ymd'));
-				$userGroups[$i]['maxRecentAchievements']= $recentMaxAchievementResults['maxAchievements'];
-				$recentMaxAchievementUsers = $recentMaxAchievementResults['maxAchievementUsers'];							
-			}
-
-			$userData = array();
-			$userData['gold'] = array();
-			$userData['silver'] = array();
-			$userData['bronze'] = array();
-			$keys = array_keys($achievements);
-			// loop through all achievements
-			for ($ii=0; $ii<sizeof($achievements); $ii++) { 
-
-				$userId = $achievements[$keys[$ii]]['user_id'];
-				$submissionId = $achievements[$keys[$ii]]['submission_id'];
-				$user = $userDao->getById($userId);
-
-				$numberOfAchievementsUser = $numberOfAchievements[$userId];
-				$rankPercentile = round($rankPercentiles[$numberOfAchievementsUser],1);
-				// reserve spance for the name: look for the longest name or 20
-				$maxNameLength = max($maxNameLength,strlen($user->getFirstName(). " " . $user->getLastName()));
-				if ($maxNameLength>20) {
-					$maxNameLength = 20;
-				}
-
-				// add the link to the profile
-
-				$linkToProfile = false;
-
-				if ($langsciCommonDAO->existsTable('langsci_website_settings') &&
-					$langsciCommonDAO->getUserSetting($userId,'publicProfile')=='true' &&
-					$settingLinksToPublicProfile) {
-					$publicProfilesPlugin = PluginRegistry::getPlugin('generic','publicprofilesplugin');
-					if ($publicProfilesPlugin) {
-						$pathPublicProfiles = explode("/", $publicProfilesPlugin->getSetting($contextId, 'langsci_publicProfiles_path'));
-						$numberOfElementsInPath = sizeof($pathPublicProfiles);
-						if ($numberOfElementsInPath==1) {
-							$linkToProfile = $request->url(null,$pathPublicProfiles[0],$userId);
-						} else if ($numberOfElementsInPath==2) {
-							$linkToProfile = $request->url(null,$pathPublicProfiles[0],$pathPublicProfiles[1],$userId);
-						} else if ($numberOfElementsInPath>2) {
-							$tail="";
-							for ($iii=2; $iii<$numberOfElementsInPath;$iii++) {
-								$tail = $tail."/".$pathPublicProfiles[$iii];
-							}
-							$tail=$tail."/".$userId;
-							$linkToProfile = $request->url(null,$pathPublicProfiles[0],$pathPublicProfiles[1]).$tail;		
-						}
-					}
-				}
-
-				// initialize medal count for each user with medals
-				if (!strcmp($settingMedalCount,'0')==0 && !isset($medalCount[$userId])) {
-					$this->initializeMedalCount($medalCount,$userId,$user,$linkToProfile);
-				}
-
-				// get medal for this user in this user group
-				$medal = 'bronze';
-				if ($rankPercentile<=$settingPercentileRanksArray[0]) {
-					$medal = 'gold';
-				} else if ($rankPercentile<=$settingPercentileRanksArray[1]) {
-					$medal = 'silver';
-				}
-				if (!strcmp($settingMedalCount,'0')==0) {
-					$medalCount[$userId]['type'][$medal][$userGroupId]=true;
-				}
-
-				// get user data
-				$userData[$medal]['user'][$userId]['rankPercentile'] = 100-round($rankPercentile,0);
-				$userData[$medal]['user'][$userId]['userId'] = $userId;
-				$userData[$medal]['user'][$userId]['fullName'] = $user->getFirstName(). " " . $user->getLastName();
-				$userData[$medal]['user'][$userId]['lastName'] = $user->getLastName();
-				$userData[$medal]['user'][$userId]['linkToProfile'] = $linkToProfile;
-
-				// get submission data
-				$userData[$medal]['user'][$userId]['submissionId'] = $submissionId;
-				if (isset($userData[$medal]['user'][$userId]['numberOfSubmissions'])) {
-					$userData[$medal]['user'][$userId]['numberOfSubmissions']++;
-				} else {
-					$userData[$medal]['user'][$userId]['numberOfSubmissions']=1;
-				}
-				if ($settingUnifiedStyleSheetForLinguistics) {   
-					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getBiblioLinguistStyle";
-						//getBiblioLinguistStyle($submissionId);
-				} else {
-					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
-						//getSubmissionPresentationString($submissionId);
-				}
-
-				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['path'] =
-						$request->url(null,'catalog','book',$submissionId);
-
-				// get users with a series star
-				$userData[$medal]['user'][$userId]['maxSeriesUser'] = false;
-				if (in_array($userId,$maxSeriesUsers)) {
-					$userData[$medal]['user'][$userId]['maxSeriesUser'] = true;
-					if (!strcmp($settingMedalCount,'0')==0) {
-						$medalCount[$userId]['type']['series'][$userGroupId] = true;
-					}
-				}
-
-				// get users with a recent star
-				if (in_array($userId,$recentMaxAchievementUsers)) {
-					$userData[$medal]['user'][$userId]['recentMaxAchievementUser'] = true;
-					if (!strcmp($settingMedalCount,'0')==0) {
-						$medalCount[$userId]['type']['recent'][$userGroupId]=true;
-					}
-				}
-			}
-
-			// get number of prizes for each user (sum up over user groups)
-			if (!strcmp($settingMedalCount,'0')==0) {
-				$userIds = array_keys($medalCount);
-				for ($ii=0; $ii<sizeof($medalCount); $ii++) {
-					for ($iii=0; $iii<sizeof($this->prizes); $iii++) {
-						if (!empty($medalCount[$userIds[$ii]]['type'][$this->prizes[$iii]][$userGroupId])) {
-							$medalCount[$userIds[$ii]]['numberOf'.$this->prizes[$iii]]++;						
-						}
-					}
-				}
-			}
-
-			if (!empty($userData['gold'])) usort($userData['gold']['user'],'sort_users');
-			if (!empty($userData['silver'])) usort($userData['silver']['user'],'sort_users');
-			if (!empty($userData['bronze'])) usort($userData['bronze']['user'],'sort_users');
-
-			$userGroups[$i]['userData'] = $userData;
-			$userGroups[$i]['maxAchievements'] = max($numberOfAchievements);
-
-			} // end if ($userGroupId)
-
-		} // end for ($i=0; $i<sizeof($userGroupsArray); $i++)
-
-		if (!strcmp($settingMedalCount,'0')==0) {
-
-			uasort($medalCount,'sort_for_medal_count');
-			// only display a certain number of users in the medal count?
-			if (!strcmp($settingMedalCount,'')==0) {
-				$keys = array_keys($medalCount);
-				$end = sizeof($medalCount);
-				for ($i=$settingMedalCount; $i<$end; $i++) {
-					unset($medalCount[$keys[$i]]);
-				}
-			}
-			// get medal count ranks
-			$this->getMedalCountRanks($medalCount);
-		}
-
-		$templateMgr = TemplateManager::getManager($request);
-		$this->setupTemplate($request); // important for getting the correct menu
-		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
-		$templateMgr->assign('userGroups',$userGroups);
-		$templateMgr->assign('medalCount',$medalCount);
-		$templateMgr->assign('settingMedalCount',$settingMedalCount);
-		$templateMgr->assign('userGroups',$userGroups);
-		$templateMgr->assign('maxNameLength',$maxNameLength);
-		$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
-		$templateMgr->assign('settingRecency',$settingRecency);
-		$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
-		$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);
-		$templateMgr->assign('userGroupNames',$userGroupNames);
-		$templateMgr->assign('baseUrl',$request->getBaseUrl());	
-		$templateMgr->assign('imageDirectory','plugins/generic/hallOfFame/img');
-		
-		$hallOfFamePlugin = PluginRegistry::getPlugin('generic', HALLOFFAME_PLUGIN_NAME);
-		$templateMgr->display($hallOfFamePlugin->getTemplatePath()."hallOfFame.tpl");
-	}
-
-	function getMaxPrizes(&$medalCount) {
-		$maxPrizes = 0;
-		$keys = array_keys($medalCount);
-		for ($i=0; $i<sizeof($medalCount); $i++) {
-			$numberOfPrizes = 0;
-			for ($ii=0; $ii<sizeof($this->prizes); $ii++) {
-				$numberOfPrizes = $numberOfPrizes + $medalCount[$keys[$i]]['numberOf'.$this->prizes[$ii]];
-			}
-			$maxPrizes = max($maxPrizes,$numberOfPrizes);
-		}
-		return $maxPrizes;
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	function getNumberOfAchievements($achievements) {
-		
-		if (!$achievements) {
-			return array();
-		}
-
-		// initalize array
-		$numberOfAchievements = array();
-		foreach ($achievements as $key => $achievement) {
-			$numberOfAchievements[$achievement['user_id']]=0;
-		}
-		// count achievements for each users
-		foreach ($achievements as $key => $achievement) {
-			$numberOfAchievements[$achievement['user_id']]++;
-		}
-		
-		return $numberOfAchievements;
-	}
-
-	function getMedalCountRanks(&$medalCount) {
-		$keys = array_keys($medalCount);
-		$rank = 0;
-		$rankSave = 0;
-		
-		for ($i=0; $i<sizeof($medalCount); $i++) {
-
-			$achievements2 = array($medalCount[$keys[$i]]['numberOfgold'],
-								   $medalCount[$keys[$i]]['numberOfsilver'],
-								   $medalCount[$keys[$i]]['numberOfbronze'],
-								   $medalCount[$keys[$i]]['numberOfseries'],
-								   $medalCount[$keys[$i]]['numberOfrecent']
-							);
-
-			if ($i==0) {
-				$better = true;
-			} else {
-				$better = false;
-				for ($ii=0; $ii<sizeof($achievements1); $ii++) {
-					if ($achievements1[$ii]>$achievements2[$ii]) {
-						$better = true;
-						$rank = $rank + $rankSave;
-						$rankSave = 0;
-						break;
-					}
-				}
-			}
-
-			if ($better) {
-				$rank++;
-			} else {
-				$rankSave++;
-			}
-			$medalCount[$keys[$i]]['rank'] = $rank;
-			$achievements1 = $achievements2;
-		}
-	}
-
 }
 
-// sort functions
+	// sort functions
 
-function sort_users($a, $b) {
+	function sort_users($a, $b) {
 
-	if ($a['numberOfSubmissions']==$b['numberOfSubmissions']) {
-		return  strcasecmp($a['lastName'],$b['lastName']);
-	} else {
+		if ($a['numberOfSubmissions']==$b['numberOfSubmissions']) {
+			return  strcasecmp($a['lastName'],$b['lastName']);
+		} else {
+			return  $b['numberOfSubmissions'] - $a['numberOfSubmissions'];
+		}
+	}
+
+	function sort_by_number_of_submissions($a, $b) {
 		return  $b['numberOfSubmissions'] - $a['numberOfSubmissions'];
 	}
-}
 
-function sort_by_number_of_submissions($a, $b) {
-	return  $b['numberOfSubmissions'] - $a['numberOfSubmissions'];
-}
+	function sort_for_medal_count($a, $b) {
 
-function sort_for_medal_count($a, $b) {
-
-	if ($a['numberOfgold']!= $b['numberOfgold']) {
-		return $b['numberOfgold']-$a['numberOfgold'];
-	} elseif ($a['numberOfsilver']!= $b['numberOfsilver']) {
-		return $b['numberOfsilver']-$a['numberOfsilver'];
-	} elseif ($a['numberOfbronze']!= $b['numberOfbronze']) {
-		return $b['numberOfbronze']-$a['numberOfbronze'];
-	} elseif ($a['numberOfseries']!= $b['numberOfseries']) {
-		return $b['numberOfseries']-$a['numberOfseries'];
-	} elseif ($a['numberOfrecent']!= $b['numberOfrecent']) {
-		return $b['numberOfrecent']-$a['numberOfrecent'];
-	} else {
-		return 0;
-	}
-}
+		if ($a['numberOfgold']!= $b['numberOfgold']) {
+			return $b['numberOfgold']-$a['numberOfgold'];
+		} elseif ($a['numberOfsilver']!= $b['numberOfsilver']) {
+			return $b['numberOfsilver']-$a['numberOfsilver'];
+		} elseif ($a['numberOfbronze']!= $b['numberOfbronze']) {
+			return $b['numberOfbronze']-$a['numberOfbronze'];
+		} elseif ($a['numberOfseries']!= $b['numberOfseries']) {
+			return $b['numberOfseries']-$a['numberOfseries'];
+		} elseif ($a['numberOfrecent']!= $b['numberOfrecent']) {
+			return $b['numberOfrecent']-$a['numberOfrecent'];
+		} else {
+			return 0;
+		}
+	}	
 
 ?>
