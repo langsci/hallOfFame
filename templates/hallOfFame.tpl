@@ -36,107 +36,14 @@
 
 <link rel="stylesheet" href="{$baseUrl}/plugins/generic/hallOfFame/css/hallOfFame.css" type="text/css" />
 
-
-<style>
-
-	button {
-		text-align:left;
-	}
-	
-	.tablink {
-	  float: left;
-	  border: none;
-	  outline: none;
-	  cursor: pointer;
-	  padding: 14px 16px;
-	  width: 25%;
-	  border-top: none;
-	  border-left:none;
-	  border-right:none;
-	  border-bottom: 2px solid #eee;
-	  border-top:  2px solid #eee;
-	  background-color: white;
-	}
-
-	.tabcontent {
-	  padding: 20px 20px;
-	  height: 100%;
-	}
-	
-	.accordion {
-	  cursor: pointer;
-	  padding: 10px;
-	  width: 100%;
-	  border: none;
-	  text-align: left;
-	  outline: none;
-	  transition: 0.8s;
-	  background-color: white;
-	}
-
-	.active, .accordion:hover {
-
-	}
-
-	.panel {
-	  padding: 0 18px;
-	  display: none;
-	  overflow: hidden;
-	}
-	
-.triangle {
-    border-color: white white white #005680;;
-    border-style: solid;
-    border-width: 5px 10px 5px 10px;
-    height: 0px;
-    width: 0px;
-	float:left
-}
-
-.active .triangle {
-    border-color: #005680 white white white;
-    border-width: 10px 5px 10px 5px;
-}
-
-.contributor-name {
-    margin-top: -3px;
-	float:left;
-}
-
-.active .contributor-name {
-    padding-left: 10px;
-	float:left;
-}
-
-
-.tooltip {
-  position: relative;
-  display: inline-block;
-  
-}
-
-
-
-.smallBarCaption {
-	margin-top:-3px;
-}
-
-.star {
-	float:left;
-	margin-top:-8px;
-	padding-right: 5px;
-}
-	
-</style>
-
 <div id="hallOfFame">
 
 	<h2 class="title">{translate key="plugins.generic.hallOfFame.title"}</h2>
 
 	<p class="intro">{translate key="plugins.generic.hallOfFame.intro"}</p>
 
-	<button class="tablink" id="tab-proofreader" onclick="openPage('proofreader')">Proofreader</button>
-	<button class="tablink" id="tab-typesetter" onclick="openPage('typesetter')">Typesetter</button>
+	<button class="tablink" id="tab-proofreader" onclick="openPage('proofreader')">{$proofreader.userGroupName}</button>
+	<button class="tablink" id="tab-typesetter" onclick="openPage('typesetter')">{$typesetter.userGroupName}</button>
 	<button class="tablink" id="tab-medalcount" onclick="openPage('medalcount')">Medal count</button>
 
 	<div id="proofreader" class="tabcontent">
@@ -146,18 +53,20 @@
 			{counter print=false assign=medal}	
 			{if $medal==1 and $medalUserData.user|@count>0}
 				<h2 class="goldTitle tooltip">
-					<span class="headerText">Gold Proofreaders</span>
-					<span class="tooltip">Gold Proofreaders have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankGold} percent of all Proofreaders.</span>
+					<span class="headerText">Gold {$proofreader.userGroupName}s</span>
+					<span class="tooltip">Gold {$proofreader.userGroupName} have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankGold} percent of all {$proofreader.userGroupName}s.</span>
 				</h2>
 			{/if}
 			{if $medal==2 and $medalUserData.user|@count>0}
 				<h2 class="silverTitle tooltip">
-					<span class="headerText">Silver Proofreaders</span>
+					<span class="headerText">Silver {$proofreader.userGroupName}s</span>
+					<span class="tooltip">Gold {$proofreader.userGroupName} have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankSilver} percent of all {$proofreader.userGroupName}s.</span>					
 				</h2>
 			{/if}
 			{if $medal==3 and $medalUserData.user|@count>0}
 				<h2 class="bronzeTitle tooltip">
-					<span class="headerText">Bronze Proofreaders</span>
+					<span class="headerText">Bronze {$proofreader.userGroupName}s</span>
+					<span class="tooltip">Bronze {$proofreader.userGroupName}s have worked on at least one book.					
 				</h2>
 			{/if}			
 		
@@ -171,22 +80,26 @@
 					<div class="star tooltip">
 					{if $user.maxSeriesUser}
 						<img src='{$baseUrl}/{$imageDirectory}/series.png'>
-						<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$userGroup.maxSeries} different series as {$userGroup.userGroupName|lower}.</span>
-					{else}
-						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+						<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$proofreader.maxSeries} different series as {$proofreader.userGroupName|lower}.</span>
 					{/if}
-					</div>							
+					</div>
 					<div class="star tooltip">
 					{if $user.recentMaxAchievementUser}
 						<img src='{$baseUrl}/{$imageDirectory}/recent.png'>
-						<span class="tooltip">Most active current {$userGroup.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$userGroup.maxRecentAchievements} book{if $userGroup.maxRecentAchievements>1}s{/if} as {$userGroup.userGroupName|lower}.</span>
-					{else}
-						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+						<span class="tooltip">Most active current {$proofreader.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$proofreader.maxRecentAchievements} book{if $proofreader.maxRecentAchievements>1}s{/if} as {$proofreader.userGroupName|lower}.</span>						
 					{/if}
+					</div>
+					<div class="star tooltip">
+					{if !$user.maxSeriesUser}
+						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+					{/if}					
+					{if !$user.recentMaxAchievementUser}
+						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+					{/if}			
 					</div>
 									
 					<div class="colorBar tooltip" style="width:{$barWidth}px;">{if $barWidth>=33}{$user.numberOfSubmissions}/{$user.rankPercentile}{else}&nbsp{/if}
-						{*<span class="tooltiptext">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$proofreader.userGroupName|lower}s.</span>*}
+						<span class="tooltip">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$proofreader.userGroupName|lower}s.</span>
 					</div>		
 
 					{if $barWidth<33}
@@ -209,9 +122,8 @@
 			{/foreach}
 			{/foreach}
 		{/foreach}
-		
 	</div>
-
+	
 	<div id="typesetter" class="tabcontent">
 	
 		{foreach from=$typesetter.userData item=medalUserData}
@@ -219,18 +131,20 @@
 			{counter print=false assign=medal}	
 			{if $medal==4 and $medalUserData.user|@count>0}
 				<h2 class="goldTitle tooltip">
-					<span class="headerText">Gold Typesetters</span>
-					<span class="tooltip">Gold Typesetters have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankGold} percent of all Typesetters.</span>
+					<span class="headerText">Gold {$typesetter.userGroupName}s</span>
+					<span class="tooltip">Gold {$typesetter.userGroupName}s have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankGold} percent of all {$typesetter.userGroupName|lower}s.</span>
 				</h2>
 			{/if}
 			{if $medal==5 and $medalUserData.user|@count>0}
 				<h2 class="silverTitle tooltip">
-					<span class="headerText">Silver Typesetters</span>
+					<span class="headerText">Silver {$typesetter.userGroupName}s</span>
+					<span class="tooltip">Silver {$typesetter.userGroupName}s have statistically worked on more books than {math equation="x-y" x=100 y=$percentileRankSilver} percent of all {$typesetter.userGroupName|lower}s.</span>					
 				</h2>
 			{/if}
 			{if $medal==6 and $medalUserData.user|@count>0}
 				<h2 class="bronzeTitle tooltip">
-					<span class="headerText">Bronze Typesetters</span>
+					<span class="headerText">Bronze {$typesetter.userGroupName}s</span>
+					<span class="tooltip">Bronze {$typesetter.userGroupName}s have worked on at least one book.
 				</h2>
 			{/if}			
 		
@@ -240,26 +154,31 @@
 				<button class="accordion">
 					<div class="triangle"></div>					
 					<div class="contributor-name" style="width:{math equation="x*y+z" x=$maxNameLength y=12 z=0}px" >{$user.fullName}</div>
-											
-					<div class="star tooltip">
+				
+					<div class="star tooltip">					
 					{if $user.maxSeriesUser}
 						<img src='{$baseUrl}/{$imageDirectory}/series.png'>
-						<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$userGroup.maxSeries} different series as {$userGroup.userGroupName|lower}.</span>
-					{else}
-						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+						<span class="tooltip">Most versatile: {$user.fullName|strip_unsafe_html} has worked for {$typesetter.maxSeries} different series as {$typesetter.userGroupName|lower}.</span>
 					{/if}
-					</div>							
+					</div>
 					<div class="star tooltip">
 					{if $user.recentMaxAchievementUser}
 						<img src='{$baseUrl}/{$imageDirectory}/recent.png'>
-						<span class="tooltip">Most active current {$userGroup.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$userGroup.maxRecentAchievements} book{if $userGroup.maxRecentAchievements>1}s{/if} as {$userGroup.userGroupName|lower}.</span>
-					{else}
+						<span class="tooltip">Most active current {$typesetter.userGroupName|lower}: In the last {$settingRecency} months, {$user.fullName|strip_unsafe_html} has worked on {$typesetter.maxRecentAchievements} book{if $typesetter.maxRecentAchievements>1}s{/if} as {$typesetter.userGroupName|lower}.</span>
+					{/if}
+					</div>
+					<div class="star tooltip">
+					{if !$user.maxSeriesUser}
+						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
+					{/if}					
+					{if !$user.recentMaxAchievementUser}
 						<img src='{$baseUrl}/{$imageDirectory}/empty.png'>
 					{/if}
 					</div>
-									
+				
+					
 					<div class="colorBar tooltip" style="width:{$barWidth}px;">{if $barWidth>=33}{$user.numberOfSubmissions}/{$user.rankPercentile}{else}&nbsp{/if}
-						{*<span class="tooltiptext">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$typesetter.userGroupName|lower}s.</span>*}
+						<span class="tooltip">{$user.fullName|strip_unsafe_html} has worked on {$user.numberOfSubmissions} book{if $user.numberOfSubmissions>1}s{/if} and is thus statistically more active than {$user.rankPercentile}% of the {$typesetter.userGroupName|lower}s.</span>
 					</div>		
 
 					{if $barWidth<33}
@@ -298,8 +217,8 @@
 							{foreach from=$achievementType key=k item=i}
 								<div class="tooltip">
 									<img style="float:left" src='{$baseUrl}/{$imageDirectory}/{$medal}.png'>
-									<span class="tooltipsmall tooltip">{if $medal=="gold"}Gold {$userGroupNames.$k}{elseif $medal=="silver"}Silver {$userGroupNames.$k}{elseif $medal=="bronze"}Bronze {$userGroupNames.$k}{elseif $medal=="recent"}Most active {$userGroupNames.$k|lower} at present{elseif $medal=="series"}Most versatile {$userGroupNames.$k|lower}{/if}</span>
-								</div>									
+									<span class="tooltipsmall tooltip">{if $medal=="gold"}Gold {$k}{elseif $medal=="silver"}Silver {$k}{elseif $medal=="bronze"}Bronze {$k}{elseif $medal=="recent"}Most active {$k} at present{elseif $medal=="series"}Most versatile {$k}{/if}</span>
+								</div>						
 							{/foreach}											
 						{/foreach}
 					</div>

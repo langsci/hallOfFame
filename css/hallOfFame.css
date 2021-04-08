@@ -57,13 +57,92 @@
 }
 
 
+#hallOfFame	button {
+	text-align:left;
+}
+	
+#hallOfFame	.tablink {
+	float: left;
+	border: none;
+	outline: none;
+	cursor: pointer;
+	padding: 14px 16px;
+	width: 25%;
+	border-top: none;
+	border-left:none;
+	border-right:none;
+	border-bottom: 2px solid #eee;
+	border-top:  2px solid #eee;
+	background-color: white;
+}
+
+#hallOfFame .tabcontent {
+	padding: 20px 20px;
+	height: 100%;
+}
+	
+#hallOfFame	.accordion {
+	cursor: pointer;
+	padding: 10px;
+	width: 100%;
+	border: none;
+	text-align: left;
+	outline: none;
+	transition: 0.8s;
+	background-color: white;
+}
+
+#hallOfFame	.panel {
+	padding: 0 18px;
+	display: none;
+	overflow: hidden;
+}
+	
+#hallOfFame .triangle {
+    border-color: white white white #005680;;
+    border-style: solid;
+    border-width: 5px 10px 5px 10px;
+    height: 0px;
+    width: 0px;
+	float:left
+}
+
+#hallOfFame .active .triangle {
+    border-color: #005680 white white white;
+    border-width: 10px 5px 10px 5px;
+}
+
+#hallOfFame .contributor-name {
+    margin-top: -3px;
+	float:left;
+}
+
+#hallOfFame .active .contributor-name {
+    padding-left: 10px;
+	float:left;
+}
+
+#hallOfFame .tooltip {
+	position: relative;
+	display: inline-block;
+}
+
+#hallOfFame .smallBarCaption {
+	margin-top:-3px;
+}
+
+#hallOfFame .star {
+	float:left;
+	margin-top:-8px;
+	padding-right: 5px;
+}
+
 /* tooltips 
 
 */
 
-/*
-h2.tooltip > span.tooltip,
-div.tooltip > span.tooltip
+#hallOfFame h2.tooltip > span.tooltip,
+#hallOfFame div.tooltip > span.tooltip
 { 
 opacity: 0; 
 visibility: hidden; 
@@ -71,46 +150,68 @@ z-index: 10;
 position: absolute; 
 background-color: #DDDDDD; 
 padding: 3px;
-padding-left: 5px;
 font-size: 10pt !important;
 font-weight: normal !important;
 
 }
 
-h2.tooltip:hover > span.tooltip,
-div.tooltip:hover > span.tooltip
+#hallOfFame h2.tooltip:hover > span.tooltip,
+#hallOfFame div.tooltip:hover > span.tooltip
 { 
 opacity: 1; 
 visibility: visible; 
 overflow: visible; 
-margin-top: 40px; 
+margin-top: 20px; 
 display: inline; 
-margin-left: -200px !important;
+margin-left: -150px; 
+line-height: 15px;
+}
+
+
+#hallOfFame .tooltip:hover > span.tooltipsmall {
+	margin-left: -100px !important;
+}
+/*
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 320px;
+  background-color:#eee;
+  border-bottom: 1px solid #999; 
+  border-radius: 3px;
+  padding: 3px;
+
+ 
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }*/
 
-#medalcount  {
+#hallOfFame #medalcount  {
 	margin-top: 70px;
 }
 
-#medalcount ul {
+#hallOfFame #medalcount ul {
 	list-style-type: none;	
 }
 
-#medalcount div.rank {
+#hallOfFame #medalcount div.rank {
     float:left;
 	width: 30px;
 }
 
-#medalcount  li {
+#hallOfFame #medalcount li {
     padding-top:20px !important;
 }
 
-div.medalCount {
+#hallOfFame #medalcount div.medalCount {
     width:100px;
 	float:left;
 }
 
-#medalcount img {
+#hallOfFame #medalcount img {
 	 margin-top:-6px;     
 }
 
@@ -123,30 +224,7 @@ div.medalCount {
 */
 
 
-h2.tooltip > span.tooltip,
-div.tooltip > span.tooltip
-{ 
-opacity: 0; 
-visibility: hidden; 
-z-index: 10; 
-position: absolute; 
-background-color: #DDDDDD; 
-padding: 3px;
-font-size: 10pt !important;
-font-weight: normal !important;
 
-}
-
-h2.tooltip:hover > span.tooltip,
-div.tooltip:hover > span.tooltip
-{ 
-opacity: 1; 
-visibility: visible; 
-overflow: visible; 
-margin-top: 40px; 
-display: inline; 
-margin-left: -200px !important;
-}
 
 
 /************************/

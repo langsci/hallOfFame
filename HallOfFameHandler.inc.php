@@ -14,7 +14,7 @@ import('plugins.generic.hallOfFame.HallOfFameDAO');
 //import('plugins.generic.hallOfFame.LangsciCommonDAO');
 //import('classes.monograph.MonographDAO');
 //import('classes.monograph.PublishedMonographDAO');
-//import('classes.press.SeriesDAO');
+import('classes.press.SeriesDAO');
 
 //include('LangsciCommonFunctions.inc.php');
 
@@ -29,6 +29,191 @@ class HallOfFameHandler extends Handler {
 	function __construct() {
 		$this->_plugin = PluginRegistry::getPlugin('generic', HALLOFFAME_PLUGIN_NAME);
 		parent::__construct();
+	}
+	
+	function halloffame($args, $request) {
+		
+		$reload = false;
+		
+		$context = $request->getContext();
+		$contextId = $context->getId();		
+		
+		$settingPercentileRanks = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_percentileRanks');
+		$settingRecency = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_recentDate');
+	
+		$settingPercentileRanksArray = explode(",",$settingPercentileRanks);
+		if ($settingPercentileRanks=="") {
+			$settingPercentileRanksArray = array();
+		}		
+
+		$dataProofreader = array();
+		$dataTypesetter = array();
+
+		$fileProofreader = 'plugins/generic/hallOfFame/json/proofreader.json';
+		$fileTypesetter = 'plugins/generic/hallOfFame/json/typesetter.json';
+		if ($reload) {
+			$dataProofreader = $this->getDataForUsergroup("Proofreader",$request);
+			$dataTypesetter = $this->getDataForUsergroup("Typesetter",$request);			
+			file_put_contents($fileProofreader, json_encode($dataProofreader));
+			file_put_contents($fileTypesetter, json_encode($dataTypesetter));			
+		} else {
+			$dataProofreader = json_decode(file_get_contents($fileProofreader),TRUE);
+			$dataTypesetter = json_decode(file_get_contents($fileTypesetter),TRUE);
+		}			
+
+		$maxNameLength = max($dataProofreader['maxNameLength'],$dataTypesetter['maxNameLength']);
+		
+		$medalCount = $dataProofreader['medalCount'];
+		foreach($dataTypesetter['medalCount'] as $userId => $data) {
+			if (!$medalCount[$userId]) {
+				$medalCount[$userId] = $data;
+			} else {
+				$medalCount[$userId]['numberOfgold'] += $data['numberOfgold'];
+				$medalCount[$userId]['numberOfsilver'] += $data['numberOfsilver'];
+				$medalCount[$userId]['numberOfbronze'] += $data['numberOfbronze'];
+				$medalCount[$userId]['numberOfseries'] += $data['numberOfseries'];
+				$medalCount[$userId]['numberOfrecent'] += $data['numberOfrecent'];
+				$medalCount[$userId]['type']['gold']+=$data['type']['gold'];
+				$medalCount[$userId]['type']['silver']+=$data['type']['silver'];
+				$medalCount[$userId]['type']['bronze']+=$data['type']['bronze'];			
+			}			
+		}
+
+		if (!strcmp($settingMedalCount,'0')==0) {
+
+			uasort($medalCount,'sort_for_medal_count');
+			// only display a certain number of users in the medal count?
+			if (!strcmp($settingMedalCount,'')==0) {
+				$keys = array_keys($medalCount);
+				$end = sizeof($medalCount);
+				for ($i=$settingMedalCount; $i<$end; $i++) {
+					unset($medalCount[$keys[$i]]);
+				}
+			}
+			// get medal count ranks
+			$this->getMedalCountRanks($medalCount);
+		}
+
+		$templateMgr = TemplateManager::getManager($request);
+		$this->setupTemplate($request); 
+		
+		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
+
+		$templateMgr->assign('medalCount',$medalCount);
+		$templateMgr->assign('settingMedalCount',$settingMedalCount);
+		$templateMgr->assign('maxNameLength',$maxNameLength);
+		//$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
+	
+		$templateMgr->assign('settingRecency',$settingRecency);
+		$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
+		$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);	
+		$templateMgr->assign('proofreader',$dataProofreader);
+		$templateMgr->assign('typesetter',$dataTypesetter);
+		$templateMgr->assign('baseUrl',$request->getBaseUrl());	
+		$templateMgr->assign('imageDirectory','plugins/generic/hallOfFame/img');
+		$templateMgr->display($this->_plugin->getTemplateResource('hallOfFame.tpl'));	
+	}	
+	
+	private function getBiblioLinguistStyle($submissionId, $contextId) {
+		
+		$hallOfFameDAO = new hallOfFameDAO;
+		$publicationId = $hallOfFameDAO->getPublicationId($submissionId);
+		if ($publicationId) {
+			$publication = Services::get('publication')->get($publicationId);			
+			$publicationDate = $hallOfFameDAO->getPublicationDate($submissionId);
+			$submission = Services::get('submission')->get($publication->getData('submissionId'));
+			$authors = $submission->getAuthors();
+		
+			// get series information
+			$seriesDao = \DAORegistry::getDAO('SeriesDAO');
+			$series = $seriesDao->getById($submission->getSeriesId());
+			if (!$series) {
+				$seriesTitle = "Series unknown";
+				$seriesPosition="tba";
+			} else {
+				$seriesTitle = $series->getLocalizedFullTitle();
+				$seriesPosition = $submission->getSeriesPosition();
+				if (empty($seriesPosition)) {
+					$seriesPosition="tba";
+				}
+			}	
+
+			// is edited volume
+			$editedVolume = false;
+			if ($submission->getWorkType()== WORK_TYPE_EDITED_VOLUME) {
+				$editedVolume = true;
+			}		
+
+			// get authors to be printed (all volume editors for edited volumes, all authors else)
+			$numberOfAuthors = 0;
+			$authorsInBiblio = array();			
+			$volumeEditorGroupId = $hallOfFameDAO -> getUserGroupIdByName("Volume Editor",$contextId);
+			$authorGroupId = $hallOfFameDAO -> getUserGroupIdByName("Author",$contextId);			
+			for ($i=0; $i<sizeof($authors); $i++) {
+				$userGroupId = $authors[$i]->getUserGroupId();
+				if ($editedVolume && $userGroupId==$volumeEditorGroupId) {
+					$numberOfAuthors = $numberOfAuthors + 1;
+					$authorsInBiblio[] = $authors[$i];
+				} else if (!$editedVolume && $authorGroupId)  {
+					$numberOfAuthors = $numberOfAuthors + 1;
+					$authorsInBiblio[] = $authors[$i];
+				}
+			}
+		
+			// get author string
+			$authorString=""; 
+			for ($i=0; $i<sizeof($authorsInBiblio); $i++) {
+				
+				// format for first author: last_name, first_name, for all others: first_name last_name
+				if ($i==0) {
+					$authorString = $authorString .
+						$authorsInBiblio[$i]->getFamilyName(null)['en_US'] . ", " .  $authorsInBiblio[$i]->getGivenName(null)['en_US'];
+				} else {	
+					// separator between authors
+					if ($i==$numberOfAuthors-1) {
+						$authorString = $authorString . " & ";
+					} else {
+						$authorString = $authorString . ", ";												
+					}
+					$authorString = $authorString .
+						$authorsInBiblio[$i]->getGivenName(null)['en_US'] . " " . $authorsInBiblio[$i]->getFamilyName(null)['en_US'];
+				}				
+			}
+
+			// get author string: for edited volumes: add (ed.)/(eds.)	
+			if ($editedVolume && $numberOfAuthors==1) {
+				$authorString = $authorString . " (ed.)";
+			} else if ($editedVolume && $numberOfAuthors>1) {
+				$authorString = $authorString . " (eds.)";
+			}
+			$authorString = $authorString . ". ";
+
+			// get author string: if there are no authors: add N.N.		
+			if ($authorString==". ") {
+				$authorString = "N.N. ";
+			}
+		
+			// get year of publication, only for published mongraphs
+			$publicationDateString = $publicationDate;
+			if (!$publicationDateString) {
+				$publicationDateString = "????";
+			} else {
+				$publicationDateString = substr($publicationDateString,0,4); 
+			}
+
+			// get title
+			$title = $submission->getLocalizedFullTitle($submissionId);
+			if (!$title) {
+				$title = "Title unknown";
+			}				
+
+			// compose biblio string
+			$biblioLinguisticStyle = $authorString . $publicationDateString .
+					".<i> " . $title . "</i> (".$seriesTitle  . " " . $seriesPosition ."). Berlin: Language Science Press.";
+			
+			return $biblioLinguisticStyle;
+		}
+		return "error";
 	}
 	
 	function getDataForUsergroup($userGroupName,&$request) {
@@ -47,15 +232,15 @@ class HallOfFameHandler extends Handler {
 			$settingRecency = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_recentDate');
 			$settingMedalCount = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_medalCount');
 			$settingPercentileRanks = $this->_plugin->getSetting($contextId,'langsci_hallOfFame_percentileRanks');
-	
-	
+
 			// check and transform setting parameters
 			$settingPercentileRanksArray = explode(",",$settingPercentileRanks);
 			if ($settingPercentileRanks=="") {
 				$settingPercentileRanksArray = array();
 			}
 			
-			$maxNameLength=0;			
+			$maxNameLength=0;
+			$userGroupInfo['userGroupName'] = $userGroupName;
 			
 			// get achievements of this user group (=array of user-submission-arrays)
 			$achievements = $hallOfFameDAO->getAchievements($userGroupId);
@@ -68,12 +253,6 @@ class HallOfFameHandler extends Handler {
 			
 			// get publication dates
 			$publicationDates = $hallOfFameDAO->getPublicationDates($contextId);
-/*		
-$myfile = 'test.txt';
-$newContentCF5344 = print_r(sizeof($this->getNumberOfAchievements($achievements)), true);
-$contentCF2343 = file_get_contents($myfile);
-$contentCF2343 .= "\n noa : " . $newContentCF5344 ;
-file_put_contents($myfile, $contentCF2343 );*/	
 
 			// remove submissions that where published before date x
 			if (strlen($settingStartCounting)==8 && ctype_digit($settingStartCounting)) {					
@@ -115,7 +294,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 			$userData['silver'] = array();
 			$userData['bronze'] = array();
 			$keys = array_keys($achievements);	
-				
+	
 			// loop through all achievements
 			for ($ii=0; $ii<sizeof($achievements); $ii++) {
 				//if ($ii==2) {break;}
@@ -148,7 +327,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 					$medal = 'silver';
 				}
 				if (!strcmp($settingMedalCount,'0')==0) {
-					$medalCount[$userId]['type'][$medal][$userGroupId]=true;
+					$medalCount[$userId]['type'][$medal][$userGroupName]=true;
 				}
 				
 				// get user data
@@ -165,13 +344,15 @@ file_put_contents($myfile, $contentCF2343 );*/
 				} else {
 					$userData[$medal]['user'][$userId]['numberOfSubmissions']=1;
 				}
-				if ($settingUnifiedStyleSheetForLinguistics) {   
-					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getBiblioLinguistStyle";
+				//if ($settingUnifiedStyleSheetForLinguistics) {   
+				$submstring = $this->getBiblioLinguistStyle($submissionId,$contextId);
+				//$submstring = "getBiblioLinguistStyle";
+				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = $submstring;
 						//getBiblioLinguistStyle($submissionId);
-				} else {
-					$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
+				//} else {
+				//	$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
 						//getSubmissionPresentationString($submissionId);
-				}
+				//}
 
 				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['path'] =
 					$request->url(null,'catalog','book',$submissionId);
@@ -181,7 +362,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 				if (in_array($userId,$userGroupInfo['maxSeriesUsers'])) {
 					$userData[$medal]['user'][$userId]['maxSeriesUser'] = true;
 					if (!strcmp($settingMedalCount,'0')==0) {
-						$medalCount[$userId]['type']['series'][$userGroupId] = true;
+						$medalCount[$userId]['type']['series'][$userGroupName] = true;
 					}
 				}	
 					
@@ -189,7 +370,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 				if (in_array($userId,$userGroupInfo['maxRecentAchievementUsers'])) {
 					$userData[$medal]['user'][$userId]['recentMaxAchievementUser'] = true;
 					if (!strcmp($settingMedalCount,'0')==0) {
-						$medalCount[$userId]['type']['recent'][$userGroupId]=true;
+						$medalCount[$userId]['type']['recent'][$userGroupName]=true;
 					}
 				}	
 			}	// end loop through all achievements
@@ -199,7 +380,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 				$userIds = array_keys($medalCount);
 				for ($ii=0; $ii<sizeof($medalCount); $ii++) {
 					for ($iii=0; $iii<sizeof($this->prizes); $iii++) {
-						if (!empty($medalCount[$userIds[$ii]]['type'][$this->prizes[$iii]][$userGroupId])) {
+						if (!empty($medalCount[$userIds[$ii]]['type'][$this->prizes[$iii]][$userGroupName])) {
 							$medalCount[$userIds[$ii]]['numberOf'.$this->prizes[$iii]]++;						
 						}
 					}
@@ -218,92 +399,7 @@ file_put_contents($myfile, $contentCF2343 );*/
 			return $userGroupInfo;
 		}
 		return null;
-	}
-	
-	function halloffame($args, $request) {
-	
-		$reload = false;
-		$fileProofreader = 'plugins/generic/hallOfFame/json/proofreader.json';
-		$fileTypesetter = 'plugins/generic/hallOfFame/json/typesetter.json';		
-		
-		$dataProofreader = array();
-		$dataTypesetter = array();		
-		if ($reload) {
-			$dataProofreader = $this->getDataForUsergroup("Proofreader",$request);		
-			$dataTypesetter = $this->getDataForUsergroup("Typesetter",$request);
-			file_put_contents($fileProofreader, json_encode($dataProofreader));
-			file_put_contents($fileTypesetter, json_encode($dataTypesetter));
-		} else {
-			$dataProofreader = json_decode(file_get_contents($fileProofreader),TRUE);
-			$dataTypesetter = json_decode(file_get_contents($fileTypesetter),TRUE);
-		}
-
-		$maxNameLength = max($dataProofreader['maxNameLength'],$dataTypesetter['maxNameLength']);
-		
-		$medalCount = $dataProofreader['medalCount'];
-		foreach($dataTypesetter['medalCount'] as $userId => $data) {
-			if (!$medalCount[$userId]) {
-				$medalCount[$userId] = $data;
-			} else {
-				$medalCount[$userId]['numberOfgold'] += $data['numberOfgold'];
-				$medalCount[$userId]['numberOfsilver'] += $data['numberOfsilver'];
-				$medalCount[$userId]['numberOfbronze'] += $data['numberOfbronze'];
-				$medalCount[$userId]['numberOfseries'] += $data['numberOfseries'];
-				$medalCount[$userId]['numberOfrecent'] += $data['numberOfrecent'];
-				$medalCount[$userId]['type']['gold']+=$data['type']['gold'];
-				$medalCount[$userId]['type']['silver']+=$data['type']['silver'];
-				$medalCount[$userId]['type']['bronze']+=$data['type']['bronze'];					
-			}			
-		}
-		
-
-		
-
-
-		
-
-
-
-		
-		
-		
-	
-	
-		if (!strcmp($settingMedalCount,'0')==0) {
-
-			uasort($medalCount,'sort_for_medal_count');
-			// only display a certain number of users in the medal count?
-			if (!strcmp($settingMedalCount,'')==0) {
-				$keys = array_keys($medalCount);
-				$end = sizeof($medalCount);
-				for ($i=$settingMedalCount; $i<$end; $i++) {
-					unset($medalCount[$keys[$i]]);
-				}
-			}
-			// get medal count ranks
-			$this->getMedalCountRanks($medalCount);
-		}
-
-		$templateMgr = TemplateManager::getManager($request);
-		$this->setupTemplate($request); 
-		
-		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
-		//$templateMgr->assign('userGroups',$userGroups);
-		$templateMgr->assign('medalCount',$medalCount);
-		$templateMgr->assign('settingMedalCount',$settingMedalCount);
-		$templateMgr->assign('maxNameLength',$maxNameLength);
-		//$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
-		//$templateMgr->assign('settingRecency',$settingRecency);
-		//$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
-		//$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);
-		//$templateMgr->assign('userGroupNames',$userGroupNames);
-		$templateMgr->assign('proofreader',$dataProofreader);
-		$templateMgr->assign('typesetter',$dataTypesetter);
-		$templateMgr->assign('baseUrl',$request->getBaseUrl());	
-		$templateMgr->assign('imageDirectory','plugins/generic/hallOfFame/img');
-		$templateMgr->display($this->_plugin->getTemplateResource('hallOfFame.tpl'));	
-	
-	}
+	}	
 
 	function getMedalCountRanks(&$medalCount) {
 		$keys = array_keys($medalCount);
