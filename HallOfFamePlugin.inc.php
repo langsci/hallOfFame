@@ -36,19 +36,18 @@ class HallOfFamePlugin extends GenericPlugin {
 	 * @param $path string
 	 * @return boolean
 	 */
-	function register($category, $path) {
-
-		if (parent::register($category, $path)) {
-			if ($this->getEnabled()) {
-				// Register the hall of fame DAO.
-			//	import('plugins.generic.hallOfFame.HallOfFameDAO');
-			//	$hallOfFameDao = new HallOfFameDAO();
-			//	DAORegistry::registerDAO('HallOfFameDAO', $hallOfFameDao);
-				HookRegistry::register('LoadHandler', array($this, 'handleLoadRequest'));
-			}
-			return true;
+	function register($category, $path, $mainContextId = null) {
+		$success = parent::register($category, $path, $mainContextId);
+		if ($success && $this->getEnabled($mainContextId)) {
+			HookRegistry::register('LoadHandler', array($this, 'handleLoadRequest'));	
+			HookRegistry::register('userdao::getAdditionalFieldNames', array($this, 'addFieldName'));
+			HookRegistry::register('User::PublicProfile::AdditionalItems', array($this, 'publicProfileFieldEdit'));
+			HookRegistry::register('publicprofileform::initdata', array($this, 'publicProfileInitData'));
+			HookRegistry::register('publicprofileform::readuservars', array($this, 'publicProfileReadUserVars'));
+			HookRegistry::register('publicprofileform::execute', array($this, 'publicProfileExecute'));
+			//HookRegistry::register('publicprofileform::Constructor', array($this, 'publicProfileAddCheck'));			
 		}
-		return false;
+		return $success;
 	}
 	
 	function handleLoadRequest($hookName, $args) {
@@ -62,6 +61,79 @@ class HallOfFamePlugin extends GenericPlugin {
 		}		
 		return false;
 	}	
+
+	/**
+	 * Renders additional content for the PublicProfileForm.
+	 * 
+	 * Called by @see lib/pkp/templates/user/publicProfileForm.tpl
+	 *
+	 * @param $output string
+	 * @param $templateMgr TemplateManager
+	 * @return bool
+	 */
+	function publicProfileFieldEdit($hookName, $params) {
+		
+		$templateMgr =& $params[1];
+		$output  =& $params[2];
+		$templateMgr->assign(array(
+			'consentLabel' => "I agree that my name is displayed in the hall of fame",
+		));		
+		$output = $templateMgr->fetch($this->getTemplateResource('consentToHallOfFame.tpl'));	
+		return true;
+	}
+	
+	/**
+	 * Init public profile consent checkbox
+	 */
+	function publicProfileInitData($hookName, $params) {
+		$form =& $params[0];
+		$user = $form->getUser();		
+		if ($user) {
+			$form->setData('hallOfFame', $user->getData('hallOfFame'));
+		}
+		return false;
+	}	
+
+	/**
+	 * Read the value of the hall of fame checkbox in the user form
+	 */
+	function publicProfileReadUserVars($hookName, $params) {
+		$form =& $params[0];
+		$vars =& $params[1];
+		$vars[] = 'hallOfFame';		
+		return false;
+	}
+
+	/**
+	 * Set the user setting
+	 */
+	function publicProfileExecute($hookName, $params) {
+		$form =& $params[0];
+		$user = $form->getUser();
+		if ($user) {
+			$user->setData('hallOfFame', $form->getData('hallOfFame'));	
+		}
+		return false;
+	}
+	
+	/**
+	 * Add the validation check for the vgWortCardNo field (2-7 numbers)
+	 */
+	 /*
+	function publicProfileAddCheck($hookName, $params) {
+		$form =& $params[0];
+		$form->addCheck(new FormValidator($form, 'hallOfFame', 'optional', 'editor.review.errorAddingReviewer'));
+		return false;
+	}	*/	
+
+	/**
+	 * Consider hallOfFame filed in the user DAO
+	 */
+	function addFieldName($hookName, $params) {
+		$fields =& $params[1];
+		$fields[] = 'hallOfFame';
+		return false;
+	}
 
 	//
 	// Implement template methods from GenericPlugin.

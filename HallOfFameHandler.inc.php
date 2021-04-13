@@ -29,10 +29,22 @@ class HallOfFameHandler extends Handler {
 	function halloffame($args, $request) {
 		
 		$reload = false;
-		if (strpos($_SERVER[REQUEST_URI], "/?reload")) {
-			$reload=true;
+		
+		$filesFolder = Config::getVar('files', 'files_dir');
+		$jsonDir = $filesFolder ."/json";
+		$proofreaderFilePath = $jsonDir ."/proofreader.json";
+		$typsetterFilePath = $jsonDir ."/typesetter.json";
+		if(!is_dir($jsonDir)){
+			mkdir($jsonDir, 0755);
+		}
+		if(!is_file($proofreaderFilePath)){
+			 file_put_contents($proofreaderFilePath, "");
 		}
 		
+		if(!is_file($typsetterFilePath)){
+			file_put_contents($typsetterFilePath, "");			
+		}
+
 		$context = $request->getContext();
 		$contextId = $context->getId();		
 		
@@ -46,17 +58,18 @@ class HallOfFameHandler extends Handler {
 
 		$dataProofreader = array();
 		$dataTypesetter = array();
-
-		$fileProofreader = 'plugins/generic/hallOfFame/json/proofreader.json';
-		$fileTypesetter = 'plugins/generic/hallOfFame/json/typesetter.json';
+		
+		if (strpos($_SERVER[REQUEST_URI], "/?reload")) {
+			$reload=true;
+		}
 		if ($reload) {
 			$dataProofreader = $this->getDataForUsergroup("Proofreader",$request);
 			$dataTypesetter = $this->getDataForUsergroup("Typesetter",$request);			
-			file_put_contents($fileProofreader, json_encode($dataProofreader));
-			file_put_contents($fileTypesetter, json_encode($dataTypesetter));			
+			file_put_contents($proofreaderFilePath, json_encode($dataProofreader));
+			file_put_contents($typsetterFilePath, json_encode($dataTypesetter));			
 		} else {
-			$dataProofreader = json_decode(file_get_contents($fileProofreader),TRUE);
-			$dataTypesetter = json_decode(file_get_contents($fileTypesetter),TRUE);
+			$dataProofreader = json_decode(file_get_contents($proofreaderFilePath),TRUE);
+			$dataTypesetter = json_decode(file_get_contents($typsetterFilePath),TRUE);
 		}			
 
 		$maxNameLength = max($dataProofreader['maxNameLength'],$dataTypesetter['maxNameLength']);
@@ -231,8 +244,8 @@ class HallOfFameHandler extends Handler {
 			// remove userIds who do not exists anymore (nicht mehr nötig? merge scheint auch die assignments zu entfernen)
 			$this->removeNonExistingUsers($achievements);
 
-			// remove users who do not want to be listed in the hall of fame, xxx todo: Eingabe
-			$this->removeAnonymousUsers($achievements);		
+			// remove users who do not want to be listed in the hall of fame (only for testing purposes, included into getAchievements)
+			//$this->removeAnonymousUsers($achievements);		
 			
 			// get publication dates
 			$publicationDates = $hallOfFameDAO->getPublicationDates($contextId);
@@ -637,6 +650,7 @@ class HallOfFameHandler extends Handler {
 			$start = sizeof($achievements)-1;
 			for ($i=$start; $i>=0; $i--) { 
 				$userId = $achievements[$keys[$i]]['user_id'];	
+				//if (!$user->getData('hallOfFame')==true) {
 				if (!$hallOfFameDAO->getUserSetting($userId,"HallOfFame")=='true') {
 					unset($achievements[$keys[$i]]);
 				}

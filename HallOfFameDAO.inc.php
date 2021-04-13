@@ -90,8 +90,9 @@ class HallOfFameDAO extends DAO {
 	// get all user-submission tuples for one user group, only get those submissions that are in the catalog (date_published not null)		
 	function getAchievements($user_group_id) {
 
-		//$result = $this->retrieve('select user_id,submission_id from stage_assignments where user_group_id='.$userGroup.' and submission_id IN (select submission_id from published_submissions WHERE date_published IS NOT NULL)');
-		$result = $this->retrieve('select user_id, submission_id from stage_assignments where user_group_id='.$user_group_id.' and submission_id in (select submission_id from publications where status=3)');
+		$result = $this->retrieve('select user_id, submission_id from stage_assignments where user_group_id='.$user_group_id.'
+		and submission_id in (select submission_id from publications where status=3)
+		and user_id in (select user_id from user_settings where setting_name="hallOfFame" and setting_value=1)');
 		
 		if ($result->RecordCount() == 0) {
 			$result->Close();
@@ -109,21 +110,6 @@ class HallOfFameDAO extends DAO {
 			$result->Close();
 			return $submissions;
 		}	
-	}
-	
-	function getUserSetting($user_id,$setting_name) {
-		$result = $this->retrieve(
-			"SELECT setting_value FROM langsci_user_settings
-				WHERE setting_name='".$setting_name."' AND user_id =" . $user_id			
-		);
-		if ($result->RecordCount() == 0) {
-			$result->Close();
-			return null;
-		} else {
-			$row = $result->getRowAssoc(false);
-			$result->Close();
-			return $this->convertFromDB($row['setting_value'],null);
-		}
 	}
 
 }
