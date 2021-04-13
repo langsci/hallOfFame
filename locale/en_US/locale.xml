@@ -4,8 +4,8 @@
 <!--
   * plugins/generic/hallOfFame/locale/en_US/locale.xml
   *
- * Copyright (c) 2016 Language Science Press
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2016-2021 Language Science Press
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Localization strings for this plugin.
   -->
@@ -18,16 +18,6 @@
 	<message key="plugins.generic.hallOfFame.settings">Settings</message>
 	<message key="plugins.generic.hallOfFame.intro">The following community members have already participated in a published volume.</message>
 
-	<message key="plugins.generic.hallOfFame.form.pathIntro">Path to the hall of fame page</message>
-	<message key="plugins.generic.hallOfFame.form.path"><![CDATA[(e.g. <i>about/hallOfFame</i> results in the path 'presspath/about/hallOfFame')]]></message>
-	<message key="plugins.generic.hallOfFame.form.userGroupsIntro">User groups to be included in the hall of fame</message>
-	<message key="plugins.generic.hallOfFame.form.userGroups"><![CDATA[(separate with commas, e.g., <i>Typesetter, Proofreader)</i>]]></message>
-	<message key="plugins.generic.hallOfFame.form.excludeForthcomings">Exclude Forthcomings (only for langsci)</message>
-	<message key="plugins.generic.hallOfFame.form.linksToPublicProfile">Add links to public profiles</message>
-	<message key="plugins.generic.hallOfFame.form.unifiedStyleSheetForLinguistics">Use Unified Style Sheet for Linguistics</message>
-	<message key="plugins.generic.hallOfFame.form.includeCommentators">Include Commentators (only for langsci)</message>
-	<message key="plugins.generic.hallOfFame.form.medalCountIntro">Restrict the number of people listed in the medal count to:</message>
-	<message key="plugins.generic.hallOfFame.form.medalCount"><![CDATA[(Enter 0 if you don't want the medal count to be displayed. If you leave this field empty, all users with achievements will be listed.)]]></message>
 	<message key="plugins.generic.hallOfFame.form.percentileRanksIntro">Percentile ranks for gold and silver medal</message>
 	<message key="plugins.generic.hallOfFame.form.percentileRanks"><![CDATA[(separate by comma, e.g. <i>20, 30</i>)]]></message>
 	<message key="plugins.generic.hallOfFame.form.startCountingIntro">Date where to start counting</message>

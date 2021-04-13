@@ -1,7 +1,7 @@
 /*
  * plugins/generic/hallOfFame/css/hallOfFame.css
  *
- * Copyright (c) 2015-2021 Language Science Press
+ * Copyright (c) 2016-2021 Language Science Press
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
 */
 
@@ -167,27 +167,9 @@ margin-left: -150px;
 line-height: 15px;
 }
 
-
 #hallOfFame .tooltip:hover > span.tooltipsmall {
 	margin-left: -100px !important;
 }
-/*
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: 320px;
-  background-color:#eee;
-  border-bottom: 1px solid #999; 
-  border-radius: 3px;
-  padding: 3px;
-
- 
-  position: absolute;
-  z-index: 1;
-}
-
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-}*/
 
 #hallOfFame #medalcount  {
 	margin-top: 70px;
@@ -214,102 +196,3 @@ line-height: 15px;
 #hallOfFame #medalcount img {
 	 margin-top:-6px;     
 }
-
-/*
-
-
-#medalCount img {
-        vertical-align: bottom;
-}
-*/
-
-
-
-
-
-/************************/
-/*
-#hallOfFame .linkToProfile {
-        font-weight: normal;
-}
-
-#hallOfFame .ui-tabs-nav {
-        border-bottom: 1px solid #dddddd;
-}
-
-#hallOfFame .tab  li {
-        border: 1px solid #dddddd;
-}
-
-#hallOfFame .tab .ui-state-active{
-        background-color: #dddddd;
-}
-
-#hallOfFame  .bibList {
-        padding-bottom: 8px;
-}
-
-#hallOfFame img {
-        display:inline;
-        height: 25px;
-}
-
-
-
-
-
-#hallOfFame div.accordionContent {
-	   height: auto !important;
-}
-
-
-
-#hallOfFame .ui-accordion-header {
-        padding: 0 !important;
-        margin: 0 !important;
-        padding: 6px 0px 6px 0px !important;
-}
-*/
-/*
-#hallOfFame .ui-accordion-header div.user {
-        height: 22px;   same size as the image 
-        display:inline-block;
-}
-*/
-/*
-#hallOfFame .ui-accordion-header div.achievements {
-        display:inline-block;
-        width: 70px;
-        vertical-align:bottom;
-}
-
-#hallOfFame .ui-accordion-header div.userName {
-        padding: 0 !important;
-        margin:0 !important;
-}
-
-
-
-#hallOfFame #tab-medalCount div.rank {
-        width: 30px;
-        float:left;
-        padding-top: 7px;
-}
-
-#hallOfFame #tab-medalCount li {
-        height: 30px;
-		list-style: none;
-}
-
-#hallOfFame div.medalCount {
-        display:inline-block;
-}
-
-
-#hallOfFame #tab-medalCount img {
-        vertical-align: bottom;
-}
-
-
-*/
-

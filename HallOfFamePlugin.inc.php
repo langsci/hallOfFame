@@ -3,8 +3,8 @@
 /**
  * @file plugins/generic/hallOfFame/HallOfFamePlugin.inc.php
  *
- * Copyright (c) 2015 Language Science Press
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2016-2021 Language Science Press
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class HallOfFamePlugin
  * Hall of fame plugin main class

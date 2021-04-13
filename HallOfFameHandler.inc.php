@@ -3,20 +3,15 @@
 /**
  * @file plugins/generic/hallOfFame/HallOfFameHandler.inc.php
  *
- * Copyright (c) 2016 Language Science Press
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2016-2021 Language Science Press
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class HallOfFameHandler
  */
 
 import('classes.handler.Handler');
 import('plugins.generic.hallOfFame.HallOfFameDAO');
-//import('plugins.generic.hallOfFame.LangsciCommonDAO');
-//import('classes.monograph.MonographDAO');
-//import('classes.monograph.PublishedMonographDAO');
 import('classes.press.SeriesDAO');
-
-//include('LangsciCommonFunctions.inc.php');
 
 class HallOfFameHandler extends Handler {
 
@@ -34,6 +29,9 @@ class HallOfFameHandler extends Handler {
 	function halloffame($args, $request) {
 		
 		$reload = false;
+		if (strpos($_SERVER[REQUEST_URI], "/?reload")) {
+			$reload=true;
+		}
 		
 		$context = $request->getContext();
 		$contextId = $context->getId();		
@@ -78,21 +76,9 @@ class HallOfFameHandler extends Handler {
 				$medalCount[$userId]['type']['bronze']+=$data['type']['bronze'];			
 			}			
 		}
-
-		if (!strcmp($settingMedalCount,'0')==0) {
-
-			uasort($medalCount,'sort_for_medal_count');
-			// only display a certain number of users in the medal count?
-			if (!strcmp($settingMedalCount,'')==0) {
-				$keys = array_keys($medalCount);
-				$end = sizeof($medalCount);
-				for ($i=$settingMedalCount; $i<$end; $i++) {
-					unset($medalCount[$keys[$i]]);
-				}
-			}
-			// get medal count ranks
-			$this->getMedalCountRanks($medalCount);
-		}
+		uasort($medalCount,'sort_for_medal_count');
+		// get medal count ranks
+		$this->getMedalCountRanks($medalCount);
 
 		$templateMgr = TemplateManager::getManager($request);
 		$this->setupTemplate($request); 
@@ -100,10 +86,7 @@ class HallOfFameHandler extends Handler {
 		$templateMgr->assign('pageTitle','plugins.generic.hallOfFame.title');
 
 		$templateMgr->assign('medalCount',$medalCount);
-		$templateMgr->assign('settingMedalCount',$settingMedalCount);
-		$templateMgr->assign('maxNameLength',$maxNameLength);
-		//$templateMgr->assign('maxPrizes',$this->getMaxPrizes($medalCount));
-	
+		$templateMgr->assign('maxNameLength',$maxNameLength);	
 		$templateMgr->assign('settingRecency',$settingRecency);
 		$templateMgr->assign('percentileRankGold',$settingPercentileRanksArray[0]);
 		$templateMgr->assign('percentileRankSilver',$settingPercentileRanksArray[1]);	
@@ -297,7 +280,6 @@ class HallOfFameHandler extends Handler {
 	
 			// loop through all achievements
 			for ($ii=0; $ii<sizeof($achievements); $ii++) {
-				//if ($ii==2) {break;}
 
 				$userId = $achievements[$keys[$ii]]['user_id'];
 				$submissionId = $achievements[$keys[$ii]]['submission_id'];
@@ -315,7 +297,7 @@ class HallOfFameHandler extends Handler {
 				$linkToProfile = false;
 
 				// initialize medal count for each user with medals
-				if (!strcmp($settingMedalCount,'0')==0 && !isset($medalCount[$userId])) {
+				if (!isset($medalCount[$userId])) {
 					$this->initializeMedalCount($medalCount,$userId,$user,$linkToProfile);
 				}
 
@@ -344,16 +326,9 @@ class HallOfFameHandler extends Handler {
 				} else {
 					$userData[$medal]['user'][$userId]['numberOfSubmissions']=1;
 				}
-				//if ($settingUnifiedStyleSheetForLinguistics) {   
-				$submstring = $this->getBiblioLinguistStyle($submissionId,$contextId);
-				//$submstring = "getBiblioLinguistStyle";
-				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = $submstring;
-						//getBiblioLinguistStyle($submissionId);
-				//} else {
-				//	$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = "getSubmissionPresentationString";
-						//getSubmissionPresentationString($submissionId);
-				//}
 
+				// get submission string and path
+				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['name'] = $this->getBiblioLinguistStyle($submissionId,$contextId);
 				$userData[$medal]['user'][$userId]['submissions'][$submissionId]['path'] =
 					$request->url(null,'catalog','book',$submissionId);
 	

@@ -1,7 +1,7 @@
 {**
  * plugins/generic/hallOfFame/templates/hallOfFame.tpl
  *
- * Copyright (c) 2015-2021 Languages Sciene Press
+ * Copyright (c) 2016-2021 Languages Sciene Press
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  *}
@@ -204,36 +204,29 @@
 		
 	</div>
 
-	{assign var="settingMedalCount" value=1}
-	{if $settingMedalCount>0 or $settingMedalCount==''} 
-		<div id="medalcount" class="tabcontent">
-			<ul>
-			{foreach from=$medalCount item=user}
-				<li>
-					<div class="rank">{$user.rank}.</div> 
-					{**<div class="medalCount" style="width:{math equation="x*y" x=$maxPrizes y=35}px;">**}
-					<div class="medalCount">
-						{foreach from=$user.type item=achievementType key=medal}
-							{foreach from=$achievementType key=k item=i}
-								<div class="tooltip">
-									<img style="float:left" src='{$baseUrl}/{$imageDirectory}/{$medal}.png'>
-									<span class="tooltipsmall tooltip">{if $medal=="gold"}Gold {$k}{elseif $medal=="silver"}Silver {$k}{elseif $medal=="bronze"}Bronze {$k}{elseif $medal=="recent"}Most active {$k} at present{elseif $medal=="series"}Most versatile {$k}{/if}</span>
-								</div>						
-							{/foreach}											
-						{/foreach}
-					</div>
-					{if $user.linkToProfile}
-						<a class="medalCountName" href="{$user.linkToProfile}">{$user.name}</a> 
-					{else}
-						{$user.name}
-					{/if}
-				</li>
-			{/foreach}
-			</ul>
-		</div>
-	{/if}
+	<div id="medalcount" class="tabcontent">
+		<ul>
+		{foreach from=$medalCount item=user}
+			<li>
+				<div class="rank">{$user.rank}.</div> 
+				<div class="medalCount">
+					{foreach from=$user.type item=achievementType key=medal}
+						{foreach from=$achievementType key=k item=i}
+							<div class="tooltip">
+								<img style="float:left" src='{$baseUrl}/{$imageDirectory}/{$medal}.png'>
+								<span class="tooltipsmall tooltip">{if $medal=="gold"}Gold {$k}{elseif $medal=="silver"}Silver {$k}{elseif $medal=="bronze"}Bronze {$k}{elseif $medal=="recent"}Most active {$k} at present{elseif $medal=="series"}Most versatile {$k}{/if}</span>
+							</div>						
+						{/foreach}											
+					{/foreach}
+				</div>
+				{$user.name}
+			</li>
+		{/foreach}
+		</ul>
+	</div>
 
 </div>
+
 <script>
 	var acc = document.getElementsByClassName("accordion");
 	var i;
