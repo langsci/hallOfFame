@@ -35,7 +35,7 @@ class HallOfFameDAO extends DAO {
 
 	function getPublicationDate($submission_id) {
 		$result = $this->retrieve(
-			'SELECT date_published from publications where submission_id = '.$submission_id
+			'SELECT date_published from publications where submission_id = '.$submission_id .' and version = (select max(version) from publications where submission_id='.$submission_id .')'
 		);
 		if ($result->RecordCount() == 0) {
 			$result->Close();
